@@ -22,21 +22,15 @@ newProcessField = ProcessField(newVideoStream)
 
 newProcessField.chooseCorner()
 
-hsv = True
 
-if hsv == True:
 
-    newProcessPuckHSV = ProcessPuckHSV(processField=newProcessField, threshold=4)
+newProcessPuckHSV = ProcessPuckHSV(processField=newProcessField, threshold=4)
 
-    newProcessPuckHSV.setHSV()
+newProcessPuckHSV.setHSV()
 
-    #newProcessPuckHSV.show_puck()
+#newProcessPuckHSV.show_puck()
 
-else:
 
-    newProcessPuckFiducial = ProcessPuck(newProcessField)
-
-    newProcessPuckFiducial.getPuckPositionAlways()
 
 new_motor = MoveMotor(newProcessPuckHSV)
 

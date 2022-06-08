@@ -23,9 +23,9 @@ class ProcessField:
         # frame = cv2.resize(frame, (0, 0), fx=0.7, fy=0.7)
         self.image = frame.copy()
         self.draw_img = frame.copy()
-        self.ptHuman = [[1647, 919], [1644, 183]]
+        self.ptHuman = []
 
-        self.ptRobot = [[165, 180], [177, 919]]
+        self.ptRobot = []
 
         # Points in the source image: Corners of the game-field. values getting set by self.chooseCorner()
         self.pts1 = np.float32([[56, 65], [368, 52], [28, 387], [389, 390]])
@@ -96,18 +96,18 @@ class ProcessField:
         # print(self.image)
         # Show image as long as there aren't 4 corners for the field
         # Quit by pressing "q"
-        #while True:
-        #    while True:
-        #        key = cv2.waitKey(1)
+        while True:
+            while True:
+                key = cv2.waitKey(1)
         #        # Enter or "q"
-        #        if key == 13 or key == ord("q"):
-        #            break
-        #        cv2.imshow("image", self.draw_img)
-        #        cv2.setMouseCallback("image", self.click_event)
-        #    if len(self.ptRobot) == 2 and len(self.ptHuman) == 2:
-        #        break
+                if key == 13 or key == ord("q"):
+                   break
+                cv2.imshow("image", self.draw_img)
+                cv2.setMouseCallback("image", self.click_event)
+            if len(self.ptRobot) == 2 and len(self.ptHuman) == 2:
+                break
         # cv2.waitKey(0)
-        #cv2.destroyAllWindows()
+        cv2.destroyAllWindows()
 
         # height = self.image.shape[0]
         # width = self.image.shape[1]

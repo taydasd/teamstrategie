@@ -8,12 +8,18 @@ import time
 
 class VideoStream:
     def __init__(self, camera=0, framerate=60, calibration=None):
-        self.stream = cv2.VideoCapture(camera)
+        self.stream = cv2.VideoCapture(camera, cv2.CAP_DSHOW)
+
+        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 1080)  # set camera Framesize
+        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 1920)
+
+
         (self.grabbed, self.frame) = self.stream.read()
         self.stopped = False
         self.framesSinceLastRequest = 0
         self.framerate = framerate
         self.camera_calibration = calibration
+
         if self.camera_calibration != None:
             self.camera_calibration.choose()
 

@@ -8,7 +8,7 @@ from Constants import constants
 class MoveMotor:
     def __init__(self, processPuckHSV=0):
         self.process_puck = processPuckHSV
-        self.arduino = serial.Serial(port="/dev/cu.usbmodem1201", baudrate=9600, timeout=0.1)
+        self.arduino = serial.Serial(port="COM4", baudrate=9600, timeout=0.1)
         self.center = (0, 0)
         self.movement_allowed = True
         self.old_motor_height = 0
@@ -58,19 +58,19 @@ class MoveMotor:
             motor_coordinate_width = (self.center[1]) * multiplier_width
             motor_coordinate_width = int(motor_coordinate_width)
             motor_coordinate_width = round(motor_coordinate_width, -2)
-            #if self.center[0] > constants.FIELD_HEIGHT * 0.4:
-            #    if self.old_motor_height > 1850 and self.old_motor_height < 2150:
-            #        motor_coordinate_height = 4000
-            #    else:
-            #        motor_coordinate_height = 2000
-            #else:
-            #    multiplier_height = constants.MOTOR_HEIGHT / constants.FIELD_HEIGHT
-            #    motor_coordinate_height = (self.center[0]) * multiplier_height
-            #    motor_coordinate_height = int(motor_coordinate_height)
-            #    motor_coordinate_height = round(motor_coordinate_height, -2)
+            if self.center[0] > constants.FIELD_HEIGHT * 0.4:
+                if self.old_motor_height > 1850 and self.old_motor_height < 2150:
+                        motor_coordinate_height = 4000
+                else:
+                    motor_coordinate_height = 2000
+            else:
+                multiplier_height = constants.MOTOR_HEIGHT / constants.FIELD_HEIGHT
+                motor_coordinate_height = (self.center[0]) * multiplier_height
+                motor_coordinate_height = int(motor_coordinate_height)
+                motor_coordinate_height = round(motor_coordinate_height, -2)
 
-            #if motor_coordinate_height > self.old_motor_height - 150 and motor_coordinate_height < self.old_motor_height + 150:
-            #    motor_coordinate_height += 300
+            if motor_coordinate_height > self.old_motor_height - 150 and motor_coordinate_height < self.old_motor_height + 150:
+               motor_coordinate_height += 300
             if motor_coordinate_width > self.old_motor_width - 50 and motor_coordinate_width < self.old_motor_width + 50:
                 continue
                 motor_coordinate_width += 25
@@ -89,7 +89,7 @@ class MoveMotor:
                 data = self.arduino.readline()
                 print(data)
                 if data == b'bewegt':
-                        print (string)
+                        #print (string)
                         self.arduino.write(bytes(string + "\n", "utf-8"))
                         self.old_random = rnd_value
                         self.old_motor_width = motor_coordinate_width
