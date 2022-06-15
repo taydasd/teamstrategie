@@ -12,7 +12,8 @@ class VideoStream:
 
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 1080)  # set camera Framesize
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 1920)
-
+        self.stream.set(cv2.CAP_PROP_FPS, 60)
+        self.stream.set(cv2.CAP_PROP_FOCUS, 5)
 
         (self.grabbed, self.frame) = self.stream.read()
         self.stopped = False
