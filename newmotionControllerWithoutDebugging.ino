@@ -123,7 +123,7 @@ void setup()
     stepperx.setEnablePin(ENABLE_PIN);
     steppery.setEnablePin(ENABLE_PIN);
 
-    Serial.begin(9600);
+    Serial.begin(115200);
 }
 
 
