@@ -40,6 +40,7 @@ AccelStepper stepperx(1, MOTOR_X_STEP_PIN, MOTOR_X_DIR_PIN);
 AccelStepper steppery(1, MOTOR_Y_STEP_PIN, MOTOR_Y_DIR_PIN);
 enum Steppers{X,Y};
 
+
 void SafeMoveTo(Steppers stepper , long absolute) {
   //check distance to endstops and direction to set speed -> avoid crash
   switch (stepper) {
@@ -50,9 +51,7 @@ void SafeMoveTo(Steppers stepper , long absolute) {
       break;
   }
 }
-void SafeMove(Steppers stepper, long relative){
- //check distance to endstops and direction to set speed -> avoid crash
-}
+
 void random_movement() {
   int lowerx = -20000;
   int lowery = -15000;
@@ -68,8 +67,8 @@ void random_movement() {
     rand_y = (rand_y + 500) / 1000;
     rand_y = rand_y * 1000;
   } while (((rand_y + steppery.currentPosition()) > MAX_Y_POS) || ((rand_y + steppery.currentPosition()) < 1000) || (rand_y == 0));
-  SafeMove(X,rand_x);
-  SafeMove(Y,rand_y);
+  SafeMoveTo(X,stepperx.currentPosition()+rand_x);
+  SafeMoveTo(Y,steppery.currentPosition()+rand_y);
   //stepperx.move(rand_x);
   //steppery.move(rand_y);
 }
