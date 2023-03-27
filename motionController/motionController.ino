@@ -33,21 +33,33 @@
 #define END_PIN_Y 10
 
 #define MAX_SPEED 9000
+#define SAFE_SPEED 1000
 #define MAX_ACCELERATION 2500000000
 #define MAX_X_POS 22800
 #define MAX_Y_POS 15600
 AccelStepper stepperx(1, MOTOR_X_STEP_PIN, MOTOR_X_DIR_PIN);
 AccelStepper steppery(1, MOTOR_Y_STEP_PIN, MOTOR_Y_DIR_PIN);
-enum Steppers{X,Y};
+enum Steppers { X, Y };
 
 
-void SafeMoveTo(Steppers stepper , long absolute) {
+void SafeMoveTo(Steppers stepper, long absolute) {
   //check distance to endstops and direction to set speed -> avoid crash
   switch (stepper) {
     case X:  //X
-    
+      if ((absolute < 0 && stepperx.currentPosition() < 100) || (absolute >= 0 && stepperx.currentPosition() > MAX_X_POS - 100)) {
+        stepperx.setMaxSpeed(SAFE_SPEED);
+      } else {
+        stepperx.setMaxSpeed(MAX_SPEED);
+      }
+      stepperx.moveTo(absolute);
       break;
     case Y:  // y
+      if ((absolute < 0 && steppery.currentPosition() < 100) || (absolute >= 0 && steppery.currentPosition() > MAX_Y_POS - 100)) {
+        steppery.setMaxSpeed(SAFE_SPEED);
+      } else {
+        steppery.setMaxSpeed(MAX_SPEED);
+      }
+      steppery.moveTo(absolute);
       break;
   }
 }
@@ -67,8 +79,8 @@ void random_movement() {
     rand_y = (rand_y + 500) / 1000;
     rand_y = rand_y * 1000;
   } while (((rand_y + steppery.currentPosition()) > MAX_Y_POS) || ((rand_y + steppery.currentPosition()) < 1000) || (rand_y == 0));
-  SafeMoveTo(X,stepperx.currentPosition()+rand_x);
-  SafeMoveTo(Y,steppery.currentPosition()+rand_y);
+  SafeMoveTo(X, stepperx.currentPosition() + rand_x);
+  SafeMoveTo(Y, steppery.currentPosition() + rand_y);
   //stepperx.move(rand_x);
   //steppery.move(rand_y);
 }
@@ -78,13 +90,13 @@ void calibrate_x() {
   long homing = -1;
   while (digitalRead(END_PIN_X)) {
     //stepperx.moveTo(homing);
-    SafeMoveTo(X,homing);
+    SafeMoveTo(X, homing);
     homing--;
     stepperx.run();
   }
   stepperx.setCurrentPosition(0);
   //stepperx.moveTo(11400);
-  SafeMoveTo(X,11400);
+  SafeMoveTo(X, 11400);
   stepperx.run();
 }
 
@@ -93,14 +105,14 @@ void calibrate_y() {
   steppery.enableOutputs();
   stepperx.enableOutputs();
   while (digitalRead(END_PIN_Y)) {
-   // steppery.moveTo(homing);
-   SafeMoveTo(Y,homing);
+    // steppery.moveTo(homing);
+    SafeMoveTo(Y, homing);
     homing--;
     steppery.run();
   }
   steppery.setCurrentPosition(0);
   //steppery.moveTo(7800);
-  SafeMoveTo(Y,7800);
+  SafeMoveTo(Y, 7800);
   steppery.run();
 }
 
@@ -137,9 +149,9 @@ void loop() {
       long movement_x = XValue.toInt();
       long movement_y = YValue.toInt();
       //stepperx.moveTo(movement_x);
-      SafeMoveTo(X,movement_x);
+      SafeMoveTo(X, movement_x);
       //steppery.moveTo(movement_y);
-      SafeMoveTo(Y,movement_y);
+      SafeMoveTo(Y, movement_y);
     }
   }
   steppery.run();
