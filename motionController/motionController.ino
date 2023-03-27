@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
 /*
  * 11: Limit Z-Axis
  * 10: Limit Y-Axis
@@ -25,7 +24,6 @@
  * X Postive = Tür
  * X Negative = Fenster
  */
-
 #define ENABLE_PIN 8
 #define MOTOR_X_STEP_PIN 2
 #define MOTOR_X_DIR_PIN 5
@@ -36,17 +34,11 @@
 
 #define MAX_SPEED 9000
 #define MAX_ACCELERATION 2500000000
+#define MAX_X_POS 22800
+#define MAX_Y_POS 15600
 
 AccelStepper stepperx(1, MOTOR_X_STEP_PIN, MOTOR_X_DIR_PIN);
 AccelStepper steppery(1, MOTOR_Y_STEP_PIN, MOTOR_Y_DIR_PIN);
-
-//constants
-long max_x_position = 22800;
-long max_y_position = 15600;
-bool st_enabled = false;
-//used variables
-long movement_x = 0;
-long movement_y = 0;
 
 void random_movement() {
   int lowerx = -20000;
@@ -54,17 +46,17 @@ void random_movement() {
   int rand_x;
   int rand_y;
   do {
-      rand_x = random(lowerx, max_x_position);
+      rand_x = random(lowerx, MAX_X_POS);
       rand_x = (rand_x+500)/1000;
       rand_x = rand_x*1000;
-  } while (((rand_x + stepperx.currentPosition()) > max_x_position) ||
+  } while (((rand_x + stepperx.currentPosition()) > MAX_X_POS) ||
   ((rand_x + stepperx.currentPosition()) < 1000) ||
   (rand_x == 0));
   do {
-      rand_y = random(lowery, max_y_position);
+      rand_y = random(lowery, MAX_Y_POS);
       rand_y = (rand_y+500)/1000;
       rand_y = rand_y*1000;
-  } while (((rand_y + steppery.currentPosition()) > max_y_position) ||
+  } while (((rand_y + steppery.currentPosition()) > MAX_Y_POS) ||
   ((rand_y + steppery.currentPosition()) < 1000) ||
   (rand_y == 0));
   stepperx.move(rand_x);
@@ -90,17 +82,14 @@ void calibrate_y()
     long homing=-1;
     steppery.enableOutputs();
     stepperx.enableOutputs();
-
     while (digitalRead(END_PIN_Y)) {
         steppery.moveTo(homing);
         homing--;
         steppery.run();
     }
-
     steppery.setCurrentPosition(0);
     steppery.moveTo(7800);
     steppery.run();
-
 }
 
 void setup()
@@ -128,9 +117,7 @@ void loop()
         String movement_string = Serial.readStringUntil('\n');
         if ((movement_string == "ready\n") || (movement_string == "ready"))
         {
-
-            Serial.print("bewegt");
-
+            Serial.print("moved");
         }
         else if ((movement_string == "calibrate\n") || (movement_string == "calibrate"))
         {
@@ -143,8 +130,8 @@ void loop()
             String XValue = movement_string.substring(0, delimiterIndex);
             String YValue = movement_string.substring(delimiterIndex + 1);
             Serial.println("YValue"+YValue+','+"XValue"+XValue);
-            movement_x = XValue.toInt();
-            movement_y = YValue.toInt();
+            long movement_x = XValue.toInt();
+            long movement_y = YValue.toInt();
             stepperx.moveTo(movement_x);
             steppery.moveTo(movement_y);
         }
