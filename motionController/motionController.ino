@@ -34,6 +34,9 @@
 #define END_PIN_X 9
 #define END_PIN_Y 10
 
+#define MAX_SPEED 9000
+#define MAX_ACCELERATION 2500000000
+
 AccelStepper stepperx(1, MOTOR_X_STEP_PIN, MOTOR_X_DIR_PIN);
 AccelStepper steppery(1, MOTOR_Y_STEP_PIN, MOTOR_Y_DIR_PIN);
 
@@ -57,7 +60,6 @@ void random_movement() {
   } while (((rand_x + stepperx.currentPosition()) > max_x_position) ||
   ((rand_x + stepperx.currentPosition()) < 1000) ||
   (rand_x == 0));
-
   do {
       rand_y = random(lowery, max_y_position);
       rand_y = (rand_y+500)/1000;
@@ -65,7 +67,6 @@ void random_movement() {
   } while (((rand_y + steppery.currentPosition()) > max_y_position) ||
   ((rand_y + steppery.currentPosition()) < 1000) ||
   (rand_y == 0));
-
   stepperx.move(rand_x);
   steppery.move(rand_y);
 }
@@ -79,11 +80,9 @@ void calibrate_x()
         homing--;
         stepperx.run();
     }
-
     stepperx.setCurrentPosition(0);
     stepperx.moveTo(11400);
     stepperx.run();
-
 }
 
 void calibrate_y()
@@ -109,35 +108,21 @@ void setup()
     pinMode(ENABLE_PIN, OUTPUT);
     pinMode(END_PIN_X, INPUT_PULLUP);
     pinMode(END_PIN_Y, INPUT_PULLUP);
-
     stepperx.setPinsInverted(false, false, true);
     steppery.setPinsInverted(false, false, true);
-
-    stepperx.setMaxSpeed(9000);
-    stepperx.setAcceleration(2500000000);
-    stepperx.setSpeed(9000);
-
-    steppery.setMaxSpeed(9000);
-    steppery.setAcceleration(2500000000);
-    steppery.setSpeed(9000);
-
+    stepperx.setMaxSpeed(MAX_SPEED);
+    stepperx.setAcceleration(MAX_ACCELERATION);
+    stepperx.setSpeed(MAX_SPEED);
+    steppery.setMaxSpeed(MAX_SPEED);
+    steppery.setAcceleration(MAX_ACCELERATION);
+    steppery.setSpeed(MAX_SPEED);
     stepperx.setEnablePin(ENABLE_PIN);
     steppery.setEnablePin(ENABLE_PIN);
-
     Serial.begin(115200);
 }
 
-
-
-
 void loop()
 {
-
-
-
-
-
-
     if (Serial.available() > 0)
     {
         String movement_string = Serial.readStringUntil('\n');
@@ -147,13 +132,11 @@ void loop()
             Serial.print("bewegt");
 
         }
-
         else if ((movement_string == "calibrate\n") || (movement_string == "calibrate"))
         {
             calibrate_x();
             calibrate_y();
         }
-
         else
         {
             int delimiterIndex = movement_string.indexOf(',');
@@ -166,9 +149,5 @@ void loop()
             steppery.moveTo(movement_y);
         }
     }
-
     steppery.run();
-
-
-
 }
