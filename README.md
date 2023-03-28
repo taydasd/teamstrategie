@@ -6,6 +6,8 @@ The file `.vscode/tasks.json` defines a task to set up a python virtual environm
 
 ## Arduino Serial Commands
 
-calibrate 
+calibrate
+<br />
 rand,randx,randy -> executes random movement (xy,x,y)
+<br />
 x,y -> for example 100,100
