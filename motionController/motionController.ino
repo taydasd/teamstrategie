@@ -46,7 +46,7 @@ void SafeMoveTo(Steppers stepper, long absolute) {
   //check distance to endstops and direction to set speed -> avoid crash
   switch (stepper) {
     case X:  //X
-      if ((absolute < 0 && stepperx.currentPosition() < 100) || (absolute >= 0 && stepperx.currentPosition() > MAX_X_POS - 100)) {
+      if ((absolute < 0 && stepperx.currentPosition()+absolute < 200) || (absolute >= 0 && stepperx.currentPosition()+absolute > MAX_X_POS - 200)) {
         stepperx.setMaxSpeed(SAFE_SPEED);
       } else {
         stepperx.setMaxSpeed(MAX_SPEED);
@@ -55,7 +55,7 @@ void SafeMoveTo(Steppers stepper, long absolute) {
       stepperx.moveTo(absolute);
       break;
     case Y:  // y
-      if ((absolute < 0 && steppery.currentPosition() < 100) || (absolute >= 0 && steppery.currentPosition() > MAX_Y_POS - 100)) {
+      if ((absolute < 0 && steppery.currentPosition()+absolute < 200) || (absolute >= 0 && steppery.currentPosition()+absolute > MAX_Y_POS - 200)) {
         steppery.setMaxSpeed(SAFE_SPEED);
       } else {
         steppery.setMaxSpeed(MAX_SPEED);
@@ -122,8 +122,10 @@ void setup() {
   pinMode(ENABLE_PIN, OUTPUT);
   pinMode(END_PIN_X, INPUT_PULLUP);
   pinMode(END_PIN_Y, INPUT_PULLUP);
+  steppery.setMinPulseWidth(10);
   stepperx.setPinsInverted(false, false, true);
   steppery.setPinsInverted(false, false, true);
+  stepperx.setMinPulseWidth(10);
   stepperx.setMaxSpeed(MAX_SPEED);
   stepperx.setAcceleration(MAX_ACCELERATION);
   stepperx.setSpeed(MAX_SPEED);
