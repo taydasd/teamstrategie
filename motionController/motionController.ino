@@ -39,65 +39,64 @@
 #define MAX_Y_POS 15600
 AccelStepper stepperx(1, MOTOR_X_STEP_PIN, MOTOR_X_DIR_PIN);
 AccelStepper steppery(1, MOTOR_Y_STEP_PIN, MOTOR_Y_DIR_PIN);
-enum Steppers { X, Y };
+enum Steppers { X,
+                Y };
 
 
 void SafeMoveTo(Steppers stepper, long absolute) {
   //check distance to endstops and direction to set speed -> avoid crash
   switch (stepper) {
     case X:  //X
-      if ((absolute < 0 && stepperx.currentPosition()+absolute < 200) || (absolute >= 0 && stepperx.currentPosition()+absolute > MAX_X_POS - 200)) {
+      if ((absolute < 0 && stepperx.currentPosition() + absolute < 200) || (absolute >= 0 && stepperx.currentPosition() + absolute > MAX_X_POS - 200)) {
         stepperx.setMaxSpeed(SAFE_SPEED);
       } else {
         stepperx.setMaxSpeed(MAX_SPEED);
       }
-      if(absolute < MAX_X_POS)
-      stepperx.moveTo(absolute);
+      if (absolute < MAX_X_POS)
+        stepperx.moveTo(absolute);
       break;
     case Y:  // y
-      if ((absolute < 0 && steppery.currentPosition()+absolute < 200) || (absolute >= 0 && steppery.currentPosition()+absolute > MAX_Y_POS - 200)) {
+      if ((absolute < 0 && steppery.currentPosition() + absolute < 200) || (absolute >= 0 && steppery.currentPosition() + absolute > MAX_Y_POS - 200)) {
         steppery.setMaxSpeed(SAFE_SPEED);
       } else {
         steppery.setMaxSpeed(MAX_SPEED);
       }
-      if(absolute < MAX_Y_POS)
-      steppery.moveTo(absolute);
+      if (absolute < MAX_Y_POS)
+        steppery.moveTo(absolute);
       break;
   }
 }
-
-void random_movement() {
-  int lowerx = -20000;
-  int lowery = -15000;
+int random_x() {
   int rand_x;
-  int rand_y;
+  int lowerx = -20000;
   do {
     rand_x = random(lowerx, MAX_X_POS);
     rand_x = (rand_x + 500) / 1000;
     rand_x = rand_x * 1000;
   } while (((rand_x + stepperx.currentPosition()) > MAX_X_POS) || ((rand_x + stepperx.currentPosition()) < 1000) || (rand_x == 0));
+  return rand_x;
+}
+int random_y() {
+  int lowery = -15000;
+  int rand_y;
   do {
     rand_y = random(lowery, MAX_Y_POS);
     rand_y = (rand_y + 500) / 1000;
     rand_y = rand_y * 1000;
   } while (((rand_y + steppery.currentPosition()) > MAX_Y_POS) || ((rand_y + steppery.currentPosition()) < 1000) || (rand_y == 0));
-  SafeMoveTo(X, stepperx.currentPosition() + rand_x);
-  SafeMoveTo(Y, steppery.currentPosition() + rand_y);
-  //stepperx.move(rand_x);
-  //steppery.move(rand_y);
+  return rand_y;
 }
+
 
 //calibrates position by moving till end switch toggled
 void calibrate_x() {
   long homing = -1;
   while (digitalRead(END_PIN_X)) {
-    //stepperx.moveTo(homing);
     SafeMoveTo(X, homing);
     homing--;
     stepperx.run();
   }
   stepperx.setCurrentPosition(0);
-  //stepperx.moveTo(11400);
   SafeMoveTo(X, 11400);
   stepperx.run();
 }
@@ -107,13 +106,11 @@ void calibrate_y() {
   steppery.enableOutputs();
   stepperx.enableOutputs();
   while (digitalRead(END_PIN_Y)) {
-    // steppery.moveTo(homing);
     SafeMoveTo(Y, homing);
     homing--;
     steppery.run();
   }
   steppery.setCurrentPosition(0);
-  //steppery.moveTo(7800);
   SafeMoveTo(Y, 7800);
   steppery.run();
 }
@@ -145,6 +142,17 @@ void loop() {
     } else if ((movement_string == "calibrate\n") || (movement_string == "calibrate")) {
       calibrate_x();
       calibrate_y();
+    } else if ((movement_string == "rand") || (movement_string == "rand\n")) {
+      int rand_x = random_x();
+      int rand_y = random_y();
+      SafeMoveTo(X, stepperx.currentPosition() + rand_x);
+      SafeMoveTo(Y, steppery.currentPosition() + rand_y);
+    } else if ((movement_string == "randx") || (movement_string == "randx\n")) {
+      int rand_x = random_x();
+      SafeMoveTo(X, stepperx.currentPosition() + rand_x);
+    } else if ((movement_string == "randy") || (movement_string == "randy\n")) {
+      int rand_y = random_y();
+      SafeMoveTo(Y, steppery.currentPosition() + rand_y);
     } else {
       int delimiterIndex = movement_string.indexOf(',');
       String XValue = movement_string.substring(0, delimiterIndex);
@@ -152,9 +160,7 @@ void loop() {
       Serial.println("YValue" + YValue + ',' + "XValue" + XValue);
       long movement_x = XValue.toInt();
       long movement_y = YValue.toInt();
-      //stepperx.moveTo(movement_x);
       SafeMoveTo(X, movement_x);
-      //steppery.moveTo(movement_y);
       SafeMoveTo(Y, movement_y);
     }
   }
