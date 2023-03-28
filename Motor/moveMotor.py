@@ -168,10 +168,8 @@ class MoveMotor:
 
 if __name__ == "__main__":
     pass
-
     test = MoveMotor()
     test.calibrate()
     test.loop()
-
     print("EXIT")
     exit
