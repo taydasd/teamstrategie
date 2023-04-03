@@ -5,6 +5,8 @@ class StepperController:
     def __init__(self, port, baud):
         self.ser = serial.Serial(port, baud)
         self.ser.open()
+        self.max_x = 1000
+        self.max_y = 1000
 
     def move_to_position(self, x, y):
         self.ser.write(str(x) + "," + str(y) + "\n")
@@ -18,6 +20,12 @@ class StepperController:
     def get_controller_status(self):
         self.ser.write("status\n")
         return self.ser.readline()
+
+    def get_max_x(self):
+        return self.max_x
+
+    def get_max_y(self):
+        return self.max_y
 
     def calibrate(self):
         self.ser.write("calibrate\n")
