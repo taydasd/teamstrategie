@@ -37,10 +37,13 @@ void setup() {
   steppery.setEnablePin(ENABLE_PIN);
   Serial.begin(115200);
 }
+void GotoStartPosition(){
+  movement_x = MAX_X/2;
+  movement_y = MAX_Y/2;
+}
 void calibrate_x() {
   long homing = -1;
   stepperx.enableOutputs();
-  stepperx.setSpeed(MIN_SPEED);
   Serial.println("Calibrate X");
   while (digitalRead(END_PIN_X)) {
     stepperx.moveTo(homing);
@@ -49,15 +52,12 @@ void calibrate_x() {
     stepperx.run();
   }
   stepperx.setCurrentPosition(0);
-  stepperx.moveTo(MAX_X/2);
-  stepperx.run();
   stepperx.disableOutputs();
 }
 
 void calibrate_y() {
   long homing = -1;
   steppery.enableOutputs();
-  steppery.setSpeed(MIN_SPEED);
   Serial.println("Calibrate Y");
   while (digitalRead(END_PIN_Y)) {
     steppery.moveTo(homing);
@@ -66,8 +66,6 @@ void calibrate_y() {
     steppery.run();
   }
   steppery.setCurrentPosition(0);
-  steppery.moveTo(MAX_Y/2);
-  steppery.run();
   steppery.disableOutputs();
 }
 bool moveAllowedy()
@@ -163,6 +161,7 @@ void loop() {
       movement_y = 0;
       calibrate_x();
       calibrate_y();
+      GotoStartPosition();
     } else {
       int delimiterIndex = command.indexOf(',');
       movement_x = command.substring(0, delimiterIndex).toInt();
