@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
 #include "defines.h"
+#include "calibration.h"
 AccelStepper stepperx(1, MOTOR_X_STEP_PIN, MOTOR_X_DIR_PIN);
 AccelStepper steppery(1, MOTOR_Y_STEP_PIN, MOTOR_Y_DIR_PIN);
 bool st_enabled = false;
@@ -22,45 +23,21 @@ void setup() {
   steppery.setEnablePin(ENABLE_PIN);
   Serial.begin(115200);
 }
-void calibrate_x() {
-  long homing = -1;
-  stepperx.enableOutputs();
-  Serial.println("Calibrate X");
-  while (digitalRead(END_PIN_X)) {
-    stepperx.moveTo(homing);
-    homing--;
-    delay(5);
-    stepperx.run();
+void enable_steppers() {
+  if (!st_enabled) {
+    stepperx.enableOutputs();
+    steppery.enableOutputs();
+    st_enabled = true;
   }
-  stepperx.setCurrentPosition(0);
-  stepperx.setMaxSpeed(MAX_SPEED);
-  stepperx.setAcceleration(MAX_ACCEL);
-  stepperx.disableOutputs();
 }
-void calibrate_y() {
-  long homing = -1;
-  steppery.enableOutputs();
-  Serial.println("Calibrate Y");
-  while (digitalRead(END_PIN_Y)) {
-    steppery.moveTo(homing);
-    delay(5);
-    homing--;
-    steppery.run();
+void disable_steppers() {
+  if (st_enabled) {
+    stepperx.disableOutputs();
+    steppery.disableOutputs();
+    st_enabled = false;
   }
-  steppery.setCurrentPosition(0);
-  steppery.setMaxSpeed(MAX_SPEED);
-  steppery.setAcceleration(MAX_ACCEL);
-  steppery.disableOutputs();
 }
-void calibrate(){
-  calibrate_x();
-  calibrate_y();
-  Serial.println("ready");
-}
-void GoToStartPosition() {
-  movement_x = MAX_X / 2;
-  movement_y = MAX_Y / 2;
-}
+
 bool moveAllowedY() {
   if (digitalRead(END_PIN_Y) == 0) {
     if (steppery.distanceToGo() > 0) {
@@ -95,15 +72,11 @@ bool moveAllowedX() {
 }
 void loop() {
   if ((stepperx.distanceToGo() != 0) || (steppery.distanceToGo() != 0) && !st_enabled) {
-    st_enabled = true;
-    stepperx.enableOutputs();
-    steppery.enableOutputs();
+    enable_steppers();
   }
   while ((stepperx.distanceToGo() != 0 || steppery.distanceToGo() != 0)) {
     if (!st_enabled) {
-      st_enabled = true;
-      stepperx.enableOutputs();
-      steppery.enableOutputs();
+      enable_steppers();
     }
     if (stepperx.distanceToGo() != 0 && moveAllowedX()) {
       stepperx.runSpeedToPosition();
@@ -113,9 +86,7 @@ void loop() {
     }
   }
   if (stepperx.distanceToGo() == 0 && steppery.distanceToGo() == 0 && st_enabled) {
-    st_enabled = false;
-    stepperx.disableOutputs();
-    steppery.disableOutputs();
+    disable_steppers();
   }
   if (Serial.available() > 0) {
     String command = Serial.readStringUntil('\n');
@@ -132,7 +103,8 @@ void loop() {
       movement_y = 0;
       calibrate_x();
       calibrate_y();
-      GoToStartPosition();
+      movement_x = MAX_X / 2;
+      movement_y = MAX_Y / 2;
     }else if((command == "status") || (command == "status\n")){
       if(stepperx.isRunning()||steppery.isRunning())
       Serial.println("busy");
