@@ -5,7 +5,6 @@ extern AccelStepper steppery;
 void calibrate_x() {
   long homing = -1;
   stepperx.enableOutputs();
-  Serial.println("Calibrate X");
   while (digitalRead(END_PIN_X)) {
     stepperx.moveTo(homing);
     homing--;
@@ -20,7 +19,6 @@ void calibrate_x() {
 void calibrate_y() {
   long homing = -1;
   steppery.enableOutputs();
-  Serial.println("Calibrate Y");
   while (digitalRead(END_PIN_Y)) {
     steppery.moveTo(homing);
     delay(5);
