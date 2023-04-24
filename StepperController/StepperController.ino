@@ -54,7 +54,7 @@ void loop() {
     }
   }
   if (stepperx.distanceToGo() == 0 && steppery.distanceToGo() == 0 && st_enabled) {
-    disable_steppers();
+    //disable_steppers();
   }
   if (Serial.available() > 0) {
     String command = Serial.readStringUntil('\n');

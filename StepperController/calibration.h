@@ -16,7 +16,6 @@ void calibrate_x() {
   stepperx.setMaxSpeed(MAX_SPEED);
   stepperx.setSpeed(MAX_SPEED);
   stepperx.setAcceleration(MAX_ACCEL);
-  stepperx.disableOutputs();
 }
 void calibrate_y() {
   long homing = -1;
@@ -32,7 +31,6 @@ void calibrate_y() {
   steppery.setMaxSpeed(MAX_SPEED);
   steppery.setSpeed(MAX_SPEED);
   steppery.setAcceleration(MAX_ACCEL);
-  steppery.disableOutputs();
 }
 void calibrate(){
   calibrate_x();
