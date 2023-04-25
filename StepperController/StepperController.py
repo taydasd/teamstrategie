@@ -19,23 +19,23 @@ class StepperController:
         return response
 
     def calibrate(self):
-        self.connection.write(b'calibrate\n')
+        self.connection.write(b'CALIBRATE\n')
         response = self.connection.readline().decode().strip()
         return response
 
     def get_status(self):
-        self.connection.write(b'status\n')
+        self.connection.write(b'STATUS\n')
         response = self.connection.readline().decode().strip()
         return response
 
     def get_position(self):
-        self.connection.write(b'position\n')
+        self.connection.write(b'POSITION\n')
         response = self.connection.readline().decode().strip()
         x, y = response.split(',')
         return int(x), int(y)
 
     def get_maxima(self):
-        self.connection.write(b'maxima\n')
+        self.connection.write(b'MAXIMA\n')
         response = self.connection.readline().decode().strip()
         x, y = response.split(',')
         return int(x), int(y)
