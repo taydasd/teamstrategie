@@ -8,12 +8,14 @@
 import sys
 import cv2
 import numpy as np
+import qdarkstyle
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QTextEdit, QVBoxLayout, QHBoxLayout, QWidget, QSizePolicy, QSlider
+from PyQt5.QtWidgets import QApplication, QSplashScreen, QMainWindow, QLabel, QPushButton, QTextEdit, QVBoxLayout, QHBoxLayout, QWidget, QSizePolicy, QSlider
 
 from Constants import *
 from Camera import Camera
+from StepperController import StepperController
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -38,6 +40,25 @@ class MainWindow(QMainWindow):
         # Create the "Calibrate" button.
         self.calibrateButton = QPushButton("Calibrate", self)
         self.calibrateButton.clicked.connect(self.calibrate)
+
+        # Create the "Move To Position" button.
+        self.moveToPositionButton = QPushButton("Move To Position", self)
+        self.moveToPositionButton.clicked.connect(self.moveToPosition)
+
+        self.xCoordTextBox = QTextEdit()
+        self.xCoordTextBox.setFixedHeight(25)
+        self.xCoordTextBox.setText("0")
+        self.yCoordTextBox = QTextEdit()
+        self.yCoordTextBox.setFixedHeight(25)
+        self.yCoordTextBox.setText("0")
+
+        self.controlHorizontalBox = QHBoxLayout()
+        self.controlHorizontalBox.addWidget(self.calibrateButton)
+        self.controlHorizontalBox.addWidget(self.moveToPositionButton)
+        self.controlHorizontalBox.addWidget(QLabel(text="X"))
+        self.controlHorizontalBox.addWidget(self.xCoordTextBox)
+        self.controlHorizontalBox.addWidget(QLabel(text="Y"))
+        self.controlHorizontalBox.addWidget(self.yCoordTextBox)
 
         # Create the sliders for adjusting the filters.
         # We need the upper and lower bounds for Hue, Saturation and Value.
@@ -137,20 +158,22 @@ class MainWindow(QMainWindow):
 
         # Create the right vertical box.
         self.vboxRight = QVBoxLayout()
-        self.vboxRight.addWidget(QLabel(text="Camera Image"))
-        self.vboxRight.addWidget(self.cameraImageLabel)
-        self.vboxRight.addWidget(QLabel(text="Filtered Image"))
+        #self.vboxRight.addWidget(QLabel(text="Filtered Image"))
         self.vboxRight.addWidget(self.filteredImageLabel)
-        self.vboxRight.addWidget(QLabel(text="Adjust filters"))
-        self.vboxRight.addLayout(self.filterVbox)
+        #self.vboxRight.addWidget(QLabel(text="Camera Image"))
+        self.vboxRight.addWidget(self.cameraImageLabel)
 
 
 
         # Create the left vertical box.
         self.vboxLeft = QVBoxLayout()
+        self.vboxLeft.addLayout(self.controlHorizontalBox)        
+        self.vboxLeft.addWidget(QLabel(text="Adjust filters"))
+        self.vboxLeft.addLayout(self.filterVbox)
         self.vboxLeft.addWidget(self.logTextbox)
+        # self.vboxLeft.addWidget(self.calibrateButton)
+        # self.vboxLeft.addWidget(self.gotoPositionButton)
         self.vboxLeft.addWidget(self.exitButton)
-        self.vboxLeft.addWidget(self.calibrateButton)
 
         self.hboxMain = QHBoxLayout()
 
@@ -169,33 +192,65 @@ class MainWindow(QMainWindow):
         self.timer.timeout.connect(self.updateImages)
         self.timer.start(30)
 
-        # Open the camera
-        # self.cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
-        # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640 / 2)
-        # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480 / 2)
-        # self.cap.set(cv2.CAP_PROP_FPS, 120)
-        # self.cap.set(cv2.CAP_PROP_FOCUS, 5)
-        # self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
-
+        # Camera used for image.
         self.camera = Camera()
+        self.stepperController = None
+        # Stepper Controller
+        try:
+            self.stepperController = StepperController(STEPPER_COM_PORT, STEPPER_BAUDRATE)        
+        except Exception:
+            self.logTextbox.append("ERROR: No Arduino found on " + STEPPER_COM_PORT + ".")
 
-        # Set the fixed size of the window
-        #self.setFixedSize(800, 600)
+        self.showMaximized()
 
     def exitApp(self):
-        self.cap.release()
         self.timer.stop()
         sys.exit()
 
     def calibrate(self):
         # Add your calibration code here
-        self.logTextbox.append("Calibration completed.")
+        if self.stepperController is not None:
+            self.logTextbox.append("Calibrating...")
+            self.stepperController.calibrate()        
+            self.isAtZero = True
+        else:
+            self.logTextbox.append("ERROR: Cannot calibrate. No Arduino found on " + STEPPER_COM_PORT + ".")
+
+    def moveToPosition(self):
+        if self.stepperController is not None:
+            try:
+                x = int(self.xCoordTextBox.toPlainText())
+                y = int(self.yCoordTextBox.toPlainText())
+                self.logTextbox.append("Moving to X=" + str(x) + ",Y=" + str(y))
+                self.stepperController.move_to_position(x, y)
+            except ValueError:
+                self.logTextbox.append("ERROR: X and/or Y value is not an integer. Cannot move to position.")
+        else:
+            self.logTextbox.append("ERROR: Cannot move to position. No Arduino found on " + STEPPER_COM_PORT + ".")
 
     def updateImages(self):
         #ret, frame = self.cap.read()
         ret, frame = self.camera.get_frame()
         if ret:
             filteredFrame = self.filterFrame(frame)
+            self.lowerBoundary = np.array([self.lowerHueSlider.value(), self.lowerSaturationSlider.value(), self.lowerValueSlider.value()])
+            self.upperBoundary = np.array([self.upperHueSlider.value(), self.upperSaturationSlider.value(), self.upperValueSlider.value()])
+            hsv = cv2.cvtColor(filteredFrame, cv2.COLOR_BGR2HSV)
+            mask = cv2.inRange(hsv, self.lowerBoundary, self.upperBoundary)
+            # We use medianBlur to get rid of so calles salt and pepper noise.
+            # If our mask gets other pixels besides the puck, we hope to eliminate them as best as possible with this "filter"
+            mask_blur = cv2.medianBlur(mask, 19)
+            contours, hierarchy = cv2.findContours(mask_blur, 1, 2)
+            if not contours:
+                return ((0, 0), 0)
+            cnt = contours[0]
+            # We use minEnclosingCircle(), because if part of the puck is not detected (perhaps an arm above the puck), we might still be
+            # able to get the correct center
+            # We also tried cv2.HoughCircles as seen in "testHSV.py", but somehow it doesn't work.
+            # It might be faster than this method though. So if you are able to get the center with cv2.HoughCircles... give it a try
+            (x, y), radius = cv2.minEnclosingCircle(cnt)
+
+            self.logTextbox.setText("X: " + str(x) + " | Y: " + str(y))
 
             # Regular frame.
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -227,7 +282,11 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.setStyleSheet(qdarkstyle.load_stylesheet())
+    splash = QSplashScreen(QPixmap("splash.png"))
+    splash.show()
     main_window = MainWindow()
+    splash.close()
     main_window.show()
     sys.exit(app.exec_())
 
