@@ -7,6 +7,7 @@
 
 import sys
 import cv2
+import math
 import numpy as np
 import qdarkstyle
 from PyQt5.QtCore import Qt, QTimer
@@ -16,7 +17,7 @@ from PyQt5.QtWidgets import QApplication, QSplashScreen, QMainWindow, QLabel, QP
 from Constants import *
 from Camera import Camera
 from StepperController import StepperController
-from Processing.ProcessFrame import filterFrameHSV
+from Processing.ProcessFrame import filterFrameHSV, detectPuck, markPuckInFrame
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -164,13 +165,25 @@ class MainWindow(QMainWindow):
         #self.vboxRight.addWidget(QLabel(text="Camera Image"))
         self.vboxRight.addWidget(self.cameraImageLabel)
 
-
+        # Puck values.
+        self.puckValuesHbox = QHBoxLayout()
+        self.puckXLabel = QLabel(text="X: 0")
+        self.puckYLabel = QLabel(text="Y: 0")
+        self.puckRadiusLabel = QLabel(text="Radius: 0")
+        self.puckVecLabel = QLabel(text="Vec: 0")
+        self.puckValuesHbox.addWidget(QLabel(text="Puck Values: "))
+        self.puckValuesHbox.addWidget(self.puckXLabel)
+        self.puckValuesHbox.addWidget(self.puckYLabel)
+        self.puckValuesHbox.addWidget(self.puckRadiusLabel)
+        self.puckValuesHbox.addWidget(self.puckVecLabel)
+        
 
         # Create the left vertical box.
         self.vboxLeft = QVBoxLayout()
         self.vboxLeft.addLayout(self.controlHorizontalBox)        
         self.vboxLeft.addWidget(QLabel(text="Adjust filters"))
         self.vboxLeft.addLayout(self.filterVbox)
+        self.vboxLeft.addLayout(self.puckValuesHbox)
         self.vboxLeft.addWidget(self.logTextbox)
         # self.vboxLeft.addWidget(self.calibrateButton)
         # self.vboxLeft.addWidget(self.gotoPositionButton)
@@ -194,7 +207,7 @@ class MainWindow(QMainWindow):
         self.timer.start(30)
 
         # Camera used for image.
-        self.camera = Camera()
+        self.camera = Camera(CAMERA_INDEX, CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT, 60)
         self.stepperController = None
         # Stepper Controller
         try:
@@ -203,6 +216,9 @@ class MainWindow(QMainWindow):
             self.logTextbox.append("ERROR: No Arduino found on " + STEPPER_COM_PORT + ".")
 
         self.showMaximized()
+        self.lastPosition = (0,0)
+        self.currentPosition = (0,0)
+        self.frameCounter = 0
 
     def exitApp(self):
         self.timer.stop()
@@ -233,9 +249,42 @@ class MainWindow(QMainWindow):
         #ret, frame = self.cap.read()
         ret, frame = self.camera.get_frame()
         if ret:
+            self.frameCounter = self.frameCounter + 1
             lowerBoundary = np.array([self.lowerHueSlider.value(), self.lowerSaturationSlider.value(), self.lowerValueSlider.value()])
             upperBoundary = np.array([self.upperHueSlider.value(), self.upperSaturationSlider.value(), self.upperValueSlider.value()])
             filteredFrame = filterFrameHSV(frame, lowerBoundary, upperBoundary)
+
+            # Detect the puck and update UI values.
+            (x, y), radius = detectPuck(filteredFrame, lowerBoundary, upperBoundary)
+            frame = markPuckInFrame(frame, x, y, radius)
+
+            self.puckXLabel.setText(str(f"X: {x:.1f}"))
+            self.puckYLabel.setText(str(f"Y: {y:.1f}"))
+            self.puckRadiusLabel.setText(str(f"Radius: {radius:.1f}"))            
+            self.currentPosition = (x, y)
+            vec = (x - self.lastPosition[0], y - self.lastPosition[1])
+            self.puckVecLabel.setText(f"Vec: {vec[0]:.1f}, {vec[1]:.1f}")
+
+
+            # Outputs the vector to the log. Only for debugging.
+            # if (x,y) != (0,0):
+            #     string = f"{self.lastPosition[0]},{self.lastPosition[1]},{self.currentPosition[0]},{self.currentPosition[1]}"
+            #     self.logTextbox.append(string)
+
+
+            pointA = (int(self.lastPosition[0]), int(self.lastPosition[1]))
+            pointB = (int(self.currentPosition[0]), int(self.currentPosition[1]))
+
+            angle = math.atan2(pointB[1] - pointA[1], pointB[0] - pointA[0])
+            length = 500
+            end_point = (int(pointA[0] + length*math.cos(angle)), int(pointA[1] + length*math.sin(angle)))
+            #if vec[0] > 1 or vec[1] > 1:
+            if self.frameCounter > 10:
+                self.lastPosition = (x, y)
+                self.frameCounter = 0
+                
+            cv2.line(frame, pointA, end_point, (0, 0, 255), 2)            
+
             self.updateImageFromFrame(self.cameraImageLabel, frame)            
             self.updateImageFromFrame(self.filteredImageLabel, filteredFrame)
 
