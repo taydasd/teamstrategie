@@ -61,6 +61,8 @@ while True:
             reflection_line = Line(auf_point, None, (1 / line.get_m()))
             reflection_point = (int(HOCKEY_TABLE_WIDTH-reflection_line.get_x(robot_pos[0])), int(robot_pos[1]))
             cv2.circle(frame, reflection_point, HOCKEY_PUCK_RADIUS, (100, 0, 255), -1)
+            cv2.line(frame, puck_pos,auf_point, (255, 255, 255), thickness=1, lineType=4)
+            cv2.line(frame, auf_point, reflection_point, (255, 255, 255), thickness=1, lineType=4)
         except:
             pass
         try:
@@ -73,9 +75,9 @@ while True:
         m = line.get_m()
         cv2.circle(frame, auf_point, HOCKEY_PUCK_RADIUS, (0, 100, 255), -1)
         if m == 0:
-            puck_pos2 = (int(HOCKEY_TABLE_WIDTH / 2), int(HOCKEY_TABLE_HEIGHT / 2 - 50))
+            puck_pos2 = (int(HOCKEY_TABLE_WIDTH / 2), int(HOCKEY_TABLE_HEIGHT / 2 - 12))
         else:
-            puck_pos2 = (int(((puck_pos2[1] - b) / m) + (HOCKEY_TABLE_WIDTH / 2)), int(HOCKEY_TABLE_HEIGHT / 2 - 50))
+            puck_pos2 = (int(((puck_pos2[1] - b) / m) + (HOCKEY_TABLE_WIDTH / 2)), int(HOCKEY_TABLE_HEIGHT / 2 - 12))
     else:
         puck_pos2 = (int(HOCKEY_TABLE_WIDTH / 2), int(HOCKEY_TABLE_HEIGHT / 2))
     cv2.circle(frame, puck_pos2, HOCKEY_PUCK_RADIUS, (0, 0, 255), -1)
