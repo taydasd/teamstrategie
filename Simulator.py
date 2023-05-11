@@ -1,5 +1,4 @@
 import numpy as np
-
 from Processing.Line import *
 import cv2
 import math
@@ -39,16 +38,13 @@ cv2.line(hockey_table, (0, int(HOCKEY_TABLE_HEIGHT/2)), (HOCKEY_TABLE_WIDTH, int
 # Convert image to 8-bit
 hockey_table = cv2.convertScaleAbs(hockey_table)
 
-puck_pos = (HOCKEY_TABLE_WIDTH / 2, HOCKEY_TABLE_HEIGHT / 2)
-robot_pos = (HOCKEY_TABLE_WIDTH / 2, 20)
-user_pos = (HOCKEY_TABLE_WIDTH / 2, HOCKEY_TABLE_HEIGHT - 20)
+puck_pos = (int(HOCKEY_TABLE_WIDTH / 2), int(HOCKEY_TABLE_HEIGHT / 2))
+robot_pos = (int(HOCKEY_TABLE_WIDTH / 2),int(20))
+user_pos = (int(HOCKEY_TABLE_WIDTH / 2), int(HOCKEY_TABLE_HEIGHT - 20))
 
 while True:
     # Copy Table Board
     frame = hockey_table.copy()
-    robot_pos = (int(robot_pos[0]), int(robot_pos[1]))
-    user_pos = (int(user_pos[0]), int(user_pos[1]))
-    puck_pos = (int(puck_pos[0]), int(puck_pos[1]))
     cv2.circle(frame, robot_pos, HOCKEY_BAT_RADIUS, (0, 255, 0), -1)
     cv2.circle(frame, user_pos, HOCKEY_BAT_RADIUS, (255, 0, 0), -1)
     cv2.circle(frame, puck_pos, HOCKEY_PUCK_RADIUS, (0, 0, 255), -1)
