@@ -50,19 +50,25 @@ while True:
     cv2.circle(frame, user_pos, HOCKEY_BAT_RADIUS, (255, 0, 0), -1)
     cv2.circle(frame, puck_pos, HOCKEY_PUCK_RADIUS, (0, 0, 255), -1)
     cv2.line(frame, puck_pos, user_pos, (255, 255, 255), thickness=1, lineType=4)
+    reflected = False
     if 0 <= puck_pos2[1] <= HOCKEY_TABLE_HEIGHT and 0 <= puck_pos2[0] <= HOCKEY_TABLE_WIDTH:
         line = Line(user_pos, puck_pos2)
         if line.get_angle() >= 0:  # linker rand
             auf_point = (int(0), int(line.get_y(0)))
-        else:  # rechter rand
+        else: # rechter rand
             auf_point = (int(HOCKEY_TABLE_WIDTH), int(line.get_y(HOCKEY_TABLE_WIDTH)))
-
         try:
             reflection_line = Line(auf_point, None, (1 / line.get_m()))
             reflection_point = (int(HOCKEY_TABLE_WIDTH-reflection_line.get_x(robot_pos[0])), int(robot_pos[1]))
             cv2.circle(frame, reflection_point, HOCKEY_PUCK_RADIUS, (100, 0, 255), -1)
         except:
             pass
+        try:
+             final_point = (int(line.get_x(robot_pos[1])), int(robot_pos[1]))
+             cv2.circle(frame, final_point, HOCKEY_PUCK_RADIUS, (100, 0, 255), -1)
+        except:
+            pass
+
         b = HOCKEY_TABLE_HEIGHT / 2
         m = line.get_m()
         cv2.circle(frame, auf_point, HOCKEY_PUCK_RADIUS, (0, 100, 255), -1)
