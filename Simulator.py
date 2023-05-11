@@ -54,9 +54,9 @@ while True:
         b = HOCKEY_TABLE_HEIGHT / 2
         m = line.get_m()
         if m == 0:
-            puck_pos2 = (int(HOCKEY_TABLE_WIDTH / 2), int(HOCKEY_TABLE_HEIGHT / 2 - 100))
+            puck_pos2 = (int(HOCKEY_TABLE_WIDTH / 2), int(HOCKEY_TABLE_HEIGHT / 2 - 50))
         else:
-            puck_pos2 = (int(((puck_pos2[1] - b) / m) + (HOCKEY_TABLE_WIDTH / 2)), int(HOCKEY_TABLE_HEIGHT / 2 - 100))
+            puck_pos2 = (int(((puck_pos2[1] - b) / m) + (HOCKEY_TABLE_WIDTH / 2)), int(HOCKEY_TABLE_HEIGHT / 2 - 50))
     else:
         puck_pos2 = (int(HOCKEY_TABLE_WIDTH / 2), int(HOCKEY_TABLE_HEIGHT / 2))
     cv2.circle(frame, puck_pos2, HOCKEY_PUCK_RADIUS, (0, 0, 255), -1)
