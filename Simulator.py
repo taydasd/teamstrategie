@@ -57,7 +57,7 @@ while True:
             auf_point = (int(HOCKEY_TABLE_WIDTH), int(line.get_y(HOCKEY_TABLE_WIDTH)))
         reflection_line = Line(auf_point, None, -1* line.get_m())
         try:
-            reflection_point = (int(reflection_line.get_x(robot_pos[0])), int(robot_pos[1]))
+            reflection_point = (int(HOCKEY_TABLE_WIDTH-reflection_line.get_x(robot_pos[0])), int(robot_pos[1]))
             cv2.circle(frame, reflection_point, HOCKEY_PUCK_RADIUS, (100, 0, 255), -1)
         except:
             pass
