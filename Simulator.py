@@ -1,4 +1,4 @@
-# Lukas Karg 2023
+#Written by Lukas Karg 2023
 import numpy as np
 from Processing.Line import *
 import cv2
