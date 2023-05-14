@@ -90,4 +90,6 @@ while True:
     cv2.setMouseCallback(WINDOW_TITLE, mouse_event_handler)
     if cv2.waitKey(10) == 27:  # exit if ESC is pressed
         break
+    if cv2.getWindowProperty(WINDOW_TITLE, cv2.WND_PROP_VISIBLE) < 1: # regular window close
+        break
 cv2.destroyAllWindows()
