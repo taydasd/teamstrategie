@@ -60,24 +60,23 @@ while True:
     cv2.circle(frame, puck_pos, HOCKEY_PUCK_RADIUS, (0, 0, 255), -1)
     cv2.line(frame, puck_pos, user_pos, (255, 20, 255), thickness=1, lineType=4)
     reflected = False
-    if 0 <= puck_pos2[1] <= HOCKEY_TABLE_HEIGHT and 0 <= puck_pos2[0] <= HOCKEY_TABLE_WIDTH:
-        line = Line(user_pos, puck_pos)
-        if line.get_angle() >= 0:  # left edge
-            collision_point = (int(0), int(line.get_y(0)))
-        else:  # right edge
-            collision_point = (int(HOCKEY_TABLE_WIDTH), int(line.get_y(HOCKEY_TABLE_WIDTH)))
-        if collision_point[1] > robot_pos[1]:  # reflection is disabled if point is behind robot
-            if line.get_m() != 0:
-                reflection_line = Line(collision_point, None, (1 / line.get_m()))
-                reflection_point = (int(HOCKEY_TABLE_WIDTH - reflection_line.get_x(robot_pos[0])), int(robot_pos[1]))
-                cv2.circle(frame, reflection_point, HOCKEY_PUCK_RADIUS, (100, 0, 255), -1)
-                cv2.line(frame, puck_pos, collision_point, (255, 255, 255), thickness=1, lineType=4)
-                cv2.line(frame, collision_point, reflection_point, (255, 255, 255), thickness=1, lineType=4)
-                cv2.circle(frame, collision_point, HOCKEY_PUCK_RADIUS, (0, 100, 255), -1)
+    line = Line(user_pos, puck_pos)
+    if line.get_angle() >= 0:  # left edge
+        collision_point = (int(0), int(line.get_y(0)))
+    else:  # right edge
+        collision_point = (int(HOCKEY_TABLE_WIDTH), int(line.get_y(HOCKEY_TABLE_WIDTH)))
+    if collision_point[1] > robot_pos[1]:  # reflection is disabled if point is behind robot
         if line.get_m() != 0:
-            final_point = (int(line.get_x(robot_pos[1])), int(robot_pos[1]))  # normal line prediction
-            cv2.circle(frame, final_point, HOCKEY_PUCK_RADIUS, (100, 0, 255), -1)
-            cv2.line(frame, puck_pos, final_point, (255, 255, 255), thickness=1, lineType=4)
+            reflection_line = Line(collision_point, None, (1 / line.get_m()))
+            reflection_point = (int(HOCKEY_TABLE_WIDTH - reflection_line.get_x(robot_pos[0])), int(robot_pos[1]))
+            cv2.circle(frame, reflection_point, HOCKEY_PUCK_RADIUS, (100, 0, 255), -1)
+            cv2.line(frame, puck_pos, collision_point, (255, 255, 255), thickness=1, lineType=4)
+            cv2.line(frame, collision_point, reflection_point, (255, 255, 255), thickness=1, lineType=4)
+            cv2.circle(frame, collision_point, HOCKEY_PUCK_RADIUS, (0, 100, 255), -1)
+    if line.get_m() != 0:
+        final_point = (int(line.get_x(robot_pos[1])), int(robot_pos[1]))  # normal line prediction
+        cv2.circle(frame, final_point, HOCKEY_PUCK_RADIUS, (100, 0, 255), -1)
+        cv2.line(frame, puck_pos, final_point, (255, 255, 255), thickness=1, lineType=4)
     cv2.imshow(WINDOW_TITLE, frame)
     cv2.setMouseCallback(WINDOW_TITLE, mouse_event_handler)
     if cv2.waitKey(10) == 27:  # exit if ESC is pressed
