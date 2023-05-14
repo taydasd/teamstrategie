@@ -11,7 +11,7 @@ import cv2
 
 WINDOW_TITLE = "HockeySimulator"
 HOCKEY_TABLE_HEIGHT = 600
-HOCKEY_TABLE_WIDTH = 300
+HOCKEY_TABLE_WIDTH = 350
 HOCKEY_BAT_RADIUS = 10
 HOCKEY_PUCK_RADIUS = 5
 puck_pos = (0, 0)
@@ -58,7 +58,7 @@ while True:
     cv2.circle(frame, robot_pos, HOCKEY_BAT_RADIUS, (0, 255, 0), -1)
     cv2.circle(frame, user_pos, HOCKEY_BAT_RADIUS, (255, 0, 0), -1)
     cv2.circle(frame, puck_pos, HOCKEY_PUCK_RADIUS, (0, 0, 255), -1)
-    cv2.line(frame, puck_pos, user_pos, (255, 255, 255), thickness=1, lineType=4)
+    cv2.line(frame, puck_pos, user_pos, (255, 20, 255), thickness=1, lineType=4)
     reflected = False
     if 0 <= puck_pos2[1] <= HOCKEY_TABLE_HEIGHT and 0 <= puck_pos2[0] <= HOCKEY_TABLE_WIDTH:
         line = Line(user_pos, puck_pos)
