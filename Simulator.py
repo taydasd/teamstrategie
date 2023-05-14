@@ -46,7 +46,7 @@ while True:
     cv2.line(frame, puck_pos, user_pos, (255, 255, 255), thickness=1, lineType=4)
     reflected = False
     if 0 <= puck_pos2[1] <= HOCKEY_TABLE_HEIGHT and 0 <= puck_pos2[0] <= HOCKEY_TABLE_WIDTH:
-        line = Line(user_pos, puck_pos2)
+        line = Line(user_pos, puck_pos)
         if line.get_angle() >= 0:  # left edge
             auf_point = (int(0), int(line.get_y(0)))
         else:  # right edge
@@ -67,15 +67,7 @@ while True:
             cv2.line(frame, puck_pos, final_point, (255, 255, 255), thickness=1, lineType=4)
         except:
             pass
-        b = HOCKEY_TABLE_HEIGHT / 2
-        m = line.get_m()
-        if m == 0:  # puck_pos2 -> This simulates the second camera frame
-            puck_pos2 = (int(HOCKEY_TABLE_WIDTH / 2), int(HOCKEY_TABLE_HEIGHT / 2 - 12))
-        else:
-            puck_pos2 = (int(((puck_pos2[1] - b) / m) + (HOCKEY_TABLE_WIDTH / 2)), int(HOCKEY_TABLE_HEIGHT / 2 - 12))
-    else:
-        puck_pos2 = (int(HOCKEY_TABLE_WIDTH / 2), int(HOCKEY_TABLE_HEIGHT / 2))
-    cv2.circle(frame, puck_pos2, HOCKEY_PUCK_RADIUS, (0, 0, 255), -1)
+
     cv2.imshow(WINDOW_TITLE, frame)
     cv2.setMouseCallback(WINDOW_TITLE, mouse_event_handler)
     if cv2.waitKey(10) == 27:  # exit if ESC is pressed
