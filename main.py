@@ -19,6 +19,7 @@ from Constants import *
 from Camera import Camera
 from StepperController import StepperController
 from Processing.ProcessFrame import filterFrameHSV, detectPuck, markPuckInFrame
+from Processing.Line import Line
 
 class MoveWorker(QThread):
     def __init__(self, stepperController, parent=None):
@@ -196,10 +197,13 @@ class MainWindow(QMainWindow):
 
         # Create the right vertical box.
         self.vboxRight = QVBoxLayout()
+        self.hboxImages = QHBoxLayout()
+
         #self.vboxRight.addWidget(QLabel(text="Filtered Image"))
-        self.vboxRight.addWidget(self.filteredImageLabel)
+        self.hboxImages.addWidget(self.filteredImageLabel)
         #self.vboxRight.addWidget(QLabel(text="Camera Image"))
-        self.vboxRight.addWidget(self.cameraImageLabel)
+        self.hboxImages.addWidget(self.cameraImageLabel)
+        self.vboxRight.addLayout(self.hboxImages)
 
         # Puck values.
         self.puckValuesHbox = QHBoxLayout()
@@ -264,7 +268,7 @@ class MainWindow(QMainWindow):
         # Create a timer to continuously update the camera image
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.updateImages)
-        self.timer.start(30)
+        self.timer.start(10)
 
         # Camera used for image.
         self.camera = Camera(CAMERA_INDEX, CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT, CAMERA_FOCUS, CAMERA_BUFFERSIZE, CAMERA_FRAMERATE)
@@ -280,10 +284,12 @@ class MainWindow(QMainWindow):
         self.moveWorker = MoveWorker(stepperController=self.stepperController)
         self.moveWorker.start()
 
-        self.robotCornerCoords = []
-        self.humanCornerCoords = []
+        self.tableCordnerCoords = []
         self.cornersApplied = False
-        self.originalCorners = np.float32([[0 ,0], [0, CAMERA_FRAME_HEIGHT - 1], [CAMERA_FRAME_WIDTH - 1, CAMERA_FRAME_HEIGHT - 1], [CAMERA_FRAME_WIDTH - 1, 0]])
+        self.originalCorners = np.float32([[0 ,0],
+                                           [CAMERA_FRAME_HEIGHT - 1, 0],
+                                           [CAMERA_FRAME_HEIGHT - 1, CAMERA_FRAME_WIDTH - 1],
+                                           [0, CAMERA_FRAME_WIDTH - 1]])
 
         self.speedThreshold = SPEED_THRESHOLD
 
@@ -302,18 +308,17 @@ class MainWindow(QMainWindow):
         sys.exit()
 
     def applyCorners(self):
-        if len(self.robotCornerCoords) == 2 and len(self.humanCornerCoords) == 2:
+        if len(self.tableCordnerCoords) == 4:
             self.logTextbox.append("Applied corners. Fitting image...")
             self.cornersApplied = True
         else:
-            self.logTextbox.append("ERROR: Not all corners set. There must be 2 corners set for the robot side and 2 for the human player side. Use left click for the robot side and right click for the human side.")
+            self.logTextbox.append("ERROR: Not all corners set. There must be 4 corners set. Use left click to set the corners.")
             self.cornersApplied = False
 
     def resetCorners(self):
         self.logTextbox.append("Reset corners. Resetting image fit.")
         self.cornersApplied = False
-        self.robotCornerCoords = []
-        self.humanCornerCoords = []
+        self.tableCordnerCoords = []
 
 
     def getImageClickPos(self, event):
@@ -321,12 +326,8 @@ class MainWindow(QMainWindow):
         y = event.pos().y()
         # 1 is left click, 2 is right click
         mouseButton = event.button()
-        if mouseButton == 1 and len(self.robotCornerCoords) < 2:
-            self.robotCornerCoords.append((x,y))
-        if mouseButton == 2 and len(self.humanCornerCoords) < 2:
-            self.humanCornerCoords.append((x,y))       
-        
-        #print(f"Image clicked at X:{x}, Y:{y}")
+        if mouseButton == 1 and len(self.tableCordnerCoords) < 4:
+            self.tableCordnerCoords.append((x,y))  
 
     def sendMoveValues(self, x, y):
         self.moveWorker.set_values(x, y)
@@ -364,18 +365,21 @@ class MainWindow(QMainWindow):
         #ret, frame = self.cap.read()
         ret, frame = self.camera.get_frame()
         if ret:
+            # Rotate the camera frame so we have it in "portrait mode" and the robot is on top.
+            frame = cv2.rotate(frame, rotateCode=cv2.ROTATE_90_CLOCKWISE)
+
             if self.cornersApplied:                
                 # If the corners are set then fit the image.
                 # Corners have to be inputted counter clockwise.
-                selectedCorners = np.float32([[self.robotCornerCoords[0][0], self.robotCornerCoords[0][1]],
-                                            [self.robotCornerCoords[1][0], self.robotCornerCoords[1][1]],
-                                            [self.humanCornerCoords[1][0], self.humanCornerCoords[1][1]],
-                                            [self.humanCornerCoords[0][0], self.humanCornerCoords[0][1]]])
+                selectedCorners = np.float32([[self.tableCordnerCoords[0][0], self.tableCordnerCoords[0][1]],
+                                            [self.tableCordnerCoords[1][0], self.tableCordnerCoords[1][1]],
+                                            [self.tableCordnerCoords[2][0], self.tableCordnerCoords[2][1]],
+                                            [self.tableCordnerCoords[3][0], self.tableCordnerCoords[3][1]]])
 
                 # Calculate transformation matrix.
                 matrix = cv2.getPerspectiveTransform(selectedCorners, self.originalCorners)
                 # Warp the image.
-                frame = cv2.warpPerspective(frame, matrix, (CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT))
+                frame = cv2.warpPerspective(frame, matrix, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH))
 
 
 
@@ -392,79 +396,62 @@ class MainWindow(QMainWindow):
             self.puckYLabel.setText(str(f"Y: {y:.1f}"))
             self.puckRadiusLabel.setText(str(f"Radius: {radius:.1f}"))            
             self.currentPosition = (x, y)
-            vec = (x - self.lastPosition[0], y - self.lastPosition[1])
-            self.puckVecLabel.setText(f"Vec: {vec[0]:.1f}, {vec[1]:.1f}")
+            velocity = (x - self.lastPosition[0], y - self.lastPosition[1])
+            self.puckVecLabel.setText(f"Vec: {velocity[0]:.1f}, {velocity[1]:.1f}")
 
-            speed = vec[0] * vec[1]
+            speed = math.sqrt( (velocity[0] * velocity[0] + velocity[1] * velocity[1]) )
             self.puckSpeedLabel.setText(f"Speed: {speed:.1f}")
 
-            if abs(speed) > 0:
-                pointLast = (int(self.lastPosition[0]), int(self.lastPosition[1]))
-                pointCurr = (int(self.currentPosition[0]), int(self.currentPosition[1]))
+            line = Line(self.lastPosition, self.currentPosition)
+            try:
+                if line.get_m() is not None:
+                    finalPoint = (int(line.get_x(0)), int(0))
+                    cv2.circle(frame, finalPoint, 20, (100,0,255), -1)
+                    cv2.line(frame, (int(self.currentPosition[0]), int(self.currentPosition[1])), finalPoint, (255,255,255), thickness=1, lineType=4)
+            except:
+                pass
 
-                # Up in this case is to the top of the image.
-                puckIsGoingUp = pointCurr[1] < pointLast[1]
 
-                intersectsTop = False
-                intersectsBottom = False
-                if puckIsGoingUp:
-                    # Check upper border.
-                    intersectsTop, intersectsX, intersectsY = self.line_intersection((pointLast, pointCurr), (self.upperBorder[0], self.upperBorder[1]))
-                else:
-                    intersectsBottom, intersectsX, intersectsY = self.line_intersection((pointLast, pointCurr), (self.lowerBorder[0], self.lowerBorder[1]))
-                
-                if intersectsTop or intersectsBottom:
-                    cv2.line(frame, (int(pointCurr[0]), int(pointCurr[1])), (int(intersectsX), int(intersectsY)), (255,255,0), 2)
-                    
-                    pointA = pointCurr
-                    if intersectsTop:
-                        pointB = (int(pointCurr[0]),0)
-                    else:
-                        pointB = (int(pointCurr[0]), CAMERA_FRAME_HEIGHT)
-                    pointC = (int(intersectsX), int(intersectsY))
-                    angle = self.getAngle(pointA, pointC, pointB)
 
-                    refAngle = self.reflection_angle(angle, 90)
+            # if abs(speed) > 0:
+            #     pointLast = (int(self.lastPosition[0]), int(self.lastPosition[1]))
+            #     pointCurr = (int(self.currentPosition[0]), int(self.currentPosition[1]))
 
-                    # Draw reflection angle.
-                    length = 1000
-                    refEndPoint = (int(pointC[0] + length * math.cos(refAngle)), int(pointC[1] + length * math.sin(refAngle)))
-                    cv2.line(frame, pointC, refEndPoint, (0, 0, 255), 2)
-            
+            #     # Up in this case is to the top of the image.
+            #     puckIsGoingUp = pointCurr[1] < pointLast[1]
 
-            # # Up in this case is to the top of the image.
-            # puckIsGoingUp = pointB[1] < pointA[1]
-            # #print(f"Puck is going up: {puckIsGoingUp}")
-
-            # # Use pythagoras or sth idk.
-            # straightX = pointB[0]
-            # if puckIsGoingUp:
-            #     straightY = 0
-            # else:
-            #     straightY = CAMERA_FRAME_HEIGHT           
-
-            # angle = math.atan2(pointB[1] - pointA[1], pointB[0] - pointA[0])
-
-            # borderLength = int(math.tan(angle) * (CAMERA_FRAME_HEIGHT - pointB[1]))
-            # if borderLength < 1000:
-            #     cv2.line(frame, pointB, (straightX, straightY), (255, 255, 255), 2)
-            #     if angle > 0:
-            #         end_point = (int(pointA[0] + borderLength * math.cos(angle)), int(pointA[1] + borderLength * math.sin(angle)))
+            #     intersectsTop = False
+            #     intersectsBottom = False
+            #     if puckIsGoingUp:
+            #         # Check upper border.
+            #         intersectsTop, intersectsX, intersectsY = self.line_intersection((pointLast, pointCurr), (self.upperBorder[0], self.upperBorder[1]))
             #     else:
-            #         end_point = (int(pointA[0] - borderLength * math.cos(angle)), int(pointA[1] - borderLength * math.sin(angle)))
-            #     print(angle)
-            #     print(end_point)
-            #     #if vec[0] > 1 or vec[1] > 1:
-            #     #if self.frameCounter > 5:
-            #     #self.frameCounter = 0
+            #         intersectsBottom, intersectsX, intersectsY = self.line_intersection((pointLast, pointCurr), (self.lowerBorder[0], self.lowerBorder[1]))
+                
+            #     if intersectsTop or intersectsBottom:
+            #         cv2.line(frame, (int(pointCurr[0]), int(pointCurr[1])), (int(intersectsX), int(intersectsY)), (255,255,0), 2)
                     
-            #     cv2.line(frame, pointA, end_point, (0, 0, 255), 2)
+            #         pointA = pointCurr
+            #         if intersectsTop:
+            #             pointB = (int(pointCurr[0]),0)
+            #         else:
+            #             pointB = (int(pointCurr[0]), CAMERA_FRAME_HEIGHT)
+            #         pointC = (int(intersectsX), int(intersectsY))
+            #         angle = self.getAngle(pointA, pointC, pointB)
+
+            #         refAngle = self.reflection_angle(angle, 90)
+
+            #         # Draw reflection angle.
+            #         length = 1000
+            #         refEndPoint = (int(pointC[0] + length * math.cos(refAngle)), int(pointC[1] + length * math.sin(refAngle)))
+            #         cv2.line(frame, pointC, refEndPoint, (0, 0, 255), 2)
 
 
             
             self.lastPosition = (x, y)
 
             # Coordinates from table and camera are inverted.
+            # !!! OUT OF DATE !!!
             #
             # Camera:
             # |----WIDTH (X)---------|
@@ -490,16 +477,14 @@ class MainWindow(QMainWindow):
 
                 # We only have half the field to work with so half the y.
                 moveY = 500
-                self.sendMoveValues(int(moveX), int(moveY))
+                #self.sendMoveValues(int(moveX), int(moveY))
 
                 #self.logTextbox.append(f"Moving based on image to X={int(moveX)}, Y={moveY}...")
                 self.frameCounter = 0
 
             if self.cornersApplied == False:
                 # Draw the corners if they are set.
-                for corner in self.robotCornerCoords:
-                    cv2.circle(frame, (corner[0], corner[1]), 5, (255,255,0), 2)
-                for corner in self.humanCornerCoords:
+                for corner in self.tableCordnerCoords:
                     cv2.circle(frame, (corner[0], corner[1]), 5, (255,255,255), 2)
 
 
@@ -556,43 +541,6 @@ class MainWindow(QMainWindow):
         qtImg = QImage(frame.data, width, height, bytesPerLine, QImage.Format_RGB888)
         pixmap = QPixmap(qtImg)
         image.setPixmap(pixmap)
-
-
-        # filteredFrame = self.filterFrame(frame)
-        # self.lowerBoundary = np.array([self.lowerHueSlider.value(), self.lowerSaturationSlider.value(), self.lowerValueSlider.value()])
-        # self.upperBoundary = np.array([self.upperHueSlider.value(), self.upperSaturationSlider.value(), self.upperValueSlider.value()])
-        # hsv = cv2.cvtColor(filteredFrame, cv2.COLOR_BGR2HSV)
-        # mask = cv2.inRange(hsv, self.lowerBoundary, self.upperBoundary)
-        # # We use medianBlur to get rid of so calles salt and pepper noise.
-        # # If our mask gets other pixels besides the puck, we hope to eliminate them as best as possible with this "filter"
-        # mask_blur = cv2.medianBlur(mask, 19)
-        # contours, hierarchy = cv2.findContours(mask_blur, 1, 2)
-        # if not contours:
-        #     return ((0, 0), 0)
-        # cnt = contours[0]
-        # # We use minEnclosingCircle(), because if part of the puck is not detected (perhaps an arm above the puck), we might still be
-        # # able to get the correct center
-        # # We also tried cv2.HoughCircles as seen in "testHSV.py", but somehow it doesn't work.
-        # # It might be faster than this method though. So if you are able to get the center with cv2.HoughCircles... give it a try
-        # (x, y), radius = cv2.minEnclosingCircle(cnt)
-
-        # #self.logTextbox.setText("X: " + str(x) + " | Y: " + str(y))
-
-        # # Regular frame.
-        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        # h, w, ch = frame.shape
-        # bytes_per_line = ch * w
-        # q_img = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
-        # pixmap = QPixmap(q_img)
-        # self.cameraImageLabel.setPixmap(pixmap)
-
-        # # Filtered frame.
-        # filteredFrame = cv2.cvtColor(filteredFrame, cv2.COLOR_BGR2RGB)
-        # h, w, ch = filteredFrame.shape
-        # bytes_per_line = ch * w
-        # q_img = QImage(filteredFrame.data, w, h, bytes_per_line, QImage.Format_RGB888)
-        # pixmap = QPixmap(q_img)
-        # self.filteredImageLabel.setPixmap(pixmap)
 
 
 
