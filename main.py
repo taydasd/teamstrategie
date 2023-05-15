@@ -33,22 +33,22 @@ class MoveWorker(QThread):
     def run(self):
         while True:
             # Wait for x and y to be set by the main thread
-            with QMutexLocker(self.mutex):
-                while self.x is None or self.y is None:
-                    self.mutex.unlock()
-                    self.msleep(10)
-                    self.mutex.lock()
-                x, y = self.x, self.y
-                self.x = None
-                self.y = None
+            #with QMutexLocker(self.mutex):
+            while self.x is None or self.y is None:
+                    #self.mutex.unlock()
+                self.msleep(1)
+                    #self.mutex.lock()
+            x, y = self.x, self.y
+            self.x = None
+            self.y = None
             #print(f"Moving X={x}, Y={y}")
             if self.stepperController != None:
                 self.stepperController.move_to_position(int(x), int(y))
 
     def set_values(self, x, y):
-        with QMutexLocker(self.mutex):
-            self.x = x
-            self.y = y
+        #with QMutexLocker(self.mutex):
+        self.x = x
+        self.y = y
 
 
 class MainWindow(QMainWindow):
@@ -235,7 +235,9 @@ class MainWindow(QMainWindow):
         self.speedThresholdSlider = QSlider(Qt.Horizontal)
         self.botSettingsHBox.addWidget(self.speedThresholdSlider)
         self.speedThresholdSlider.setMinimum(0)
-        self.speedThresholdSlider.setMaximum(1000)
+        self.speedThresholdSlider.setMaximum(200)
+
+        self.speedThresholdSlider.setValue(SPEED_THRESHOLD)
         self.speedThresholdLabel = QLabel(str(self.speedThresholdSlider.value()))
         self.botSettingsHBox.addWidget(self.speedThresholdLabel)
         self.speedThresholdSlider.valueChanged.connect(lambda value: self.speedThresholdLabel.setText(str(value)))
@@ -269,7 +271,7 @@ class MainWindow(QMainWindow):
         # Create a timer to continuously update the camera image
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.updateImages)
-        self.timer.start(10)
+        self.timer.start(1)
 
         # Camera used for image.
         self.camera = Camera(CAMERA_INDEX, CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT, CAMERA_FOCUS, CAMERA_BUFFERSIZE, CAMERA_FRAMERATE)
@@ -304,11 +306,17 @@ class MainWindow(QMainWindow):
         self.frameCounter = 0
         self.moveForward = True
 
-        self.puckPositions = deque(maxlen=10)
+        self.puckPositions = deque(maxlen=MAX_PUCK_POSITION_BUFFER)
+        self.positionsSent = 0
+
 
     def exitApp(self):
         self.timer.stop()
         sys.exit()
+
+    def mainLoop(self):
+        while True:
+            self.updateImages()
 
     def applyCorners(self):
         if len(self.tableCordnerCoords) == 4:
@@ -371,9 +379,6 @@ class MainWindow(QMainWindow):
             # Rotate the camera frame so we have it in "portrait mode" and the robot is on top.
             frame = cv2.rotate(frame, rotateCode=cv2.ROTATE_90_CLOCKWISE)
 
-            # Blur the frame a bit
-            #frame = cv2.GaussianBlur(frame, (5,5), 0)
-
             if self.cornersApplied:                
                 # If the corners are set then fit the image.
                 # Corners have to be inputted counter clockwise.
@@ -386,6 +391,12 @@ class MainWindow(QMainWindow):
                 matrix = cv2.getPerspectiveTransform(selectedCorners, self.originalCorners)
                 # Warp the image.
                 frame = cv2.warpPerspective(frame, matrix, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH))
+                frame = cv2.resize(frame, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH))
+
+            if self.cornersApplied == False:
+                # Draw the corners if they are set.
+                for corner in self.tableCordnerCoords:
+                    cv2.circle(frame, (corner[0], corner[1]), 5, (255,255,255), 2)
 
 
 
@@ -404,63 +415,67 @@ class MainWindow(QMainWindow):
             self.puckXLabel.setText(str(f"X: {x:.1f}"))
             self.puckYLabel.setText(str(f"Y: {y:.1f}"))
             self.puckRadiusLabel.setText(str(f"Radius: {radius:.1f}"))
-            velocity = (x - self.lastPosition[0], y - self.lastPosition[1])
+            
+
+            avgPositionX = sum(pos[0] for pos in self.puckPositions) / len(self.puckPositions)
+            avgPositionY = sum(pos[1] for pos in self.puckPositions) / len(self.puckPositions)
+
+            velocity = (x - avgPositionX, y - avgPositionY)
             self.puckVecLabel.setText(f"Vec: {velocity[0]:.1f}, {velocity[1]:.1f}")
 
             speed = math.sqrt( (velocity[0] * velocity[0] + velocity[1] * velocity[1]) )
             self.puckSpeedLabel.setText(f"Speed: {speed:.1f}")
 
-            avgPositionX = sum(pos[0] for pos in self.puckPositions) / len(self.puckPositions)
-            avgPositionY = sum(pos[1] for pos in self.puckPositions) / len(self.puckPositions)
+            puckPos = (int(self.currentPosition[0]), int(self.currentPosition[1]))
 
-            #line = Line(self.lastPosition, self.currentPosition)
-            line = Line((avgPositionX, avgPositionY), self.currentPosition)
-            try:
-                if line.get_m() is not None:
-                    finalPoint = (int(line.get_x(0)), int(0))
-                    cv2.circle(frame, finalPoint, 20, (100,0,255), -1)
-                    cv2.line(frame, (int(self.currentPosition[0]), int(self.currentPosition[1])), finalPoint, (255,255,255), thickness=1, lineType=4)
-            except:
-                pass
+            goingBack = puckPos[1] > avgPositionY
 
+            if speed > self.speedThresholdSlider.value() and not goingBack:
+                line = Line((avgPositionX, avgPositionY), self.currentPosition)
+                try:
+                    if line.get_m() is not None:
+                        # if line.get_angle() >= 0: # left edge
+                        #     collisionPoint = (int(0), int(line.get_y(0)))
+                        # else: # right edge
+                        #     collisionPoint = (int(CAMERA_FRAME_HEIGHT), int(line.get_y(CAMERA_FRAME_HEIGHT)))
 
-
-            # if abs(speed) > 0:
-            #     pointLast = (int(self.lastPosition[0]), int(self.lastPosition[1]))
-            #     pointCurr = (int(self.currentPosition[0]), int(self.currentPosition[1]))
-
-            #     # Up in this case is to the top of the image.
-            #     puckIsGoingUp = pointCurr[1] < pointLast[1]
-
-            #     intersectsTop = False
-            #     intersectsBottom = False
-            #     if puckIsGoingUp:
-            #         # Check upper border.
-            #         intersectsTop, intersectsX, intersectsY = self.line_intersection((pointLast, pointCurr), (self.upperBorder[0], self.upperBorder[1]))
-            #     else:
-            #         intersectsBottom, intersectsX, intersectsY = self.line_intersection((pointLast, pointCurr), (self.lowerBorder[0], self.lowerBorder[1]))
-                
-            #     if intersectsTop or intersectsBottom:
-            #         cv2.line(frame, (int(pointCurr[0]), int(pointCurr[1])), (int(intersectsX), int(intersectsY)), (255,255,0), 2)
-                    
-            #         pointA = pointCurr
-            #         if intersectsTop:
-            #             pointB = (int(pointCurr[0]),0)
-            #         else:
-            #             pointB = (int(pointCurr[0]), CAMERA_FRAME_HEIGHT)
-            #         pointC = (int(intersectsX), int(intersectsY))
-            #         angle = self.getAngle(pointA, pointC, pointB)
-
-            #         refAngle = self.reflection_angle(angle, 90)
-
-            #         # Draw reflection angle.
-            #         length = 1000
-            #         refEndPoint = (int(pointC[0] + length * math.cos(refAngle)), int(pointC[1] + length * math.sin(refAngle)))
-            #         cv2.line(frame, pointC, refEndPoint, (0, 0, 255), 2)
+                        # reflectionLine = Line(collisionPoint, None, (1 / line.get_m()))
+                        # reflectionPoint = (int(CAMERA_FRAME_HEIGHT - reflectionLine.get_x(0)), int(0))
+                        # cv2.circle(frame, reflectionPoint, 5, (100, 0, 255), -1)
+                        # cv2.line(frame, puckPos, collisionPoint, (255, 255, 255), thickness=1, lineType=4)
+                        # cv2.line(frame, collisionPoint, reflectionPoint, (255, 255, 255), thickness=1, lineType=4)
+                        # cv2.circle(frame, collisionPoint, 5, (0, 100, 255), -1)
 
 
-            
-            self.lastPosition = (x, y)
+                        finalPoint = (int(line.get_x(50)), 50)
+                        cv2.circle(frame, finalPoint, 5, (100,0,255), -1)
+                        cv2.line(frame, puckPos, finalPoint, (255,255,255), thickness=1, lineType=4)
+                        
+                        # Puck movement.
+                        if self.frameCounter > 2 and x != 0 and y != 0:
+                            #self.logTextbox.append(f"Final Point: X={finalPoint[0]}, Y={finalPoint[1]}")
+
+                            if finalPoint[0] > 20 and finalPoint[0] < CAMERA_FRAME_HEIGHT - 20:
+                                moveX, moveY = self.mapCoordinates(finalPoint[0], finalPoint[1], CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH, TABLE_MAX_X, TABLE_MAX_Y)
+                                #self.logTextbox.append(f"Move To: X={moveX}, Y={moveY}")
+                                moveY = 0
+                                # X is inverted
+                                moveX = TABLE_MAX_X - moveX
+                                self.positionsSent += 1
+                                print(f"Sending {self.positionsSent}")
+                                self.sendMoveValues(int(moveX), int(moveY))
+
+                            #moveX, moveY = self.mapCoordinates(finalPoint[0], finalPoint[1], CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH, TABLE_MAX_X, TABLE_MAX_Y)
+                            #cameraX, cameraY = self.mapCoordinates(moveY, moveX, TABLE_MAX_Y, TABLE_MAX_X, CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT)
+
+                            #cv2.circle(frame, (int(cameraX), int(cameraY)), 10, (0, 255, 255), 2)
+
+                            # We only have half the field to work with so half the y.
+                            #moveY = 500                           
+
+                            self.frameCounter = 0
+                except:
+                    pass
 
             # Coordinates from table and camera are inverted.
             # !!! OUT OF DATE !!!
@@ -481,9 +496,9 @@ class MainWindow(QMainWindow):
 
             
 
-            if self.frameCounter > 5 and x != 0 and y != 0 and abs(speed) > self.speedThresholdSlider.value():
-                moveY, moveX = self.mapCoordinates(finalPoint[0], finalPoint[1], CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT, TABLE_MAX_Y, TABLE_MAX_X)
-                cameraX, cameraY = self.mapCoordinates(moveY, moveX, TABLE_MAX_Y, TABLE_MAX_X, CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT)
+            #if self.frameCounter > 5 and x != 0 and y != 0 and abs(speed) > self.speedThresholdSlider.value():
+                #moveY, moveX = self.mapCoordinates(finalPoint[0], finalPoint[1], CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT, TABLE_MAX_Y, TABLE_MAX_X)
+                #cameraX, cameraY = self.mapCoordinates(moveY, moveX, TABLE_MAX_Y, TABLE_MAX_X, CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT)
 
                 #cv2.circle(frame, (int(cameraX), int(cameraY)), 10, (0, 255, 255), 2)
 
@@ -493,13 +508,11 @@ class MainWindow(QMainWindow):
                 #self.sendMoveValues(int(moveX), int(moveY))
 
                 #self.logTextbox.append(f"Moving based on image to X={int(moveX)}, Y={moveY}...")
-                self.frameCounter = 0
+                
 
-            if self.cornersApplied == False:
-                # Draw the corners if they are set.
-                for corner in self.tableCordnerCoords:
-                    cv2.circle(frame, (corner[0], corner[1]), 5, (255,255,255), 2)
-
+            
+            if len(self.puckPositions) > MAX_PUCK_POSITION_BUFFER:
+                self.puckPositions.popleft()
 
             self.updateImageFromFrame(self.cameraImageLabel, frame)            
             self.updateImageFromFrame(self.filteredImageLabel, filteredFrame)
