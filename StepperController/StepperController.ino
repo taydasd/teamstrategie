@@ -48,7 +48,7 @@ void loop() {
     if (steppery.distanceToGo() != 0 && steppery.targetPosition() <= MAX_Y &&  steppery.targetPosition()>=0) {
       steppery.run();
     }
-  }
+  
   if (Serial.available() > 0) {
     String command = Serial.readStringUntil('\n');
     command.trim();
