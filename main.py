@@ -14,7 +14,7 @@ from collections import deque
 from shapely.geometry import LineString, Point
 from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal, QMutex, QMutexLocker
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import QApplication, QSplashScreen, QMainWindow, QLabel, QPushButton, QTextEdit, QVBoxLayout, QHBoxLayout, QWidget, QSizePolicy, QSlider
+from PyQt5.QtWidgets import QApplication, QSplashScreen, QMainWindow, QLabel, QPushButton, QCheckBox, QTextEdit, QVBoxLayout, QHBoxLayout, QWidget, QSizePolicy, QSlider
 
 from Constants import *
 from Camera import Camera
@@ -242,6 +242,10 @@ class MainWindow(QMainWindow):
         self.botSettingsHBox.addWidget(self.speedThresholdLabel)
         self.speedThresholdSlider.valueChanged.connect(lambda value: self.speedThresholdLabel.setText(str(value)))
 
+        self.activateBotCheckBox = QCheckBox("Activate Bot")
+        self.botSettingsHBox.addWidget(self.activateBotCheckBox)
+        self.activateBotCheckBox.clicked.connect(self.setBotState)
+        self.activateBotCheckBox.setCheckState(Qt.CheckState.Unchecked)
 
         # Create the left vertical box.
         self.vboxLeft = QVBoxLayout()
@@ -309,6 +313,8 @@ class MainWindow(QMainWindow):
         self.puckPositions = deque(maxlen=MAX_PUCK_POSITION_BUFFER)
         self.positionsSent = 0
 
+        self.botActivated = False
+
 
     def exitApp(self):
         self.timer.stop()
@@ -317,6 +323,12 @@ class MainWindow(QMainWindow):
     def mainLoop(self):
         while True:
             self.updateImages()
+
+    def setBotState(self):
+        if self.activateBotCheckBox.checkState() == Qt.CheckState.Checked:
+            self.botActivated = True
+        else:
+            self.botActivated = False
 
     def applyCorners(self):
         if len(self.tableCordnerCoords) == 4:
@@ -338,7 +350,7 @@ class MainWindow(QMainWindow):
         # 1 is left click, 2 is right click
         mouseButton = event.button()
         if mouseButton == 1 and len(self.tableCordnerCoords) < 4:
-            self.tableCordnerCoords.append((x,y))  
+            self.tableCordnerCoords.append((x,y))
 
     def sendMoveValues(self, x, y):
         self.moveWorker.set_values(x, y)
@@ -365,7 +377,6 @@ class MainWindow(QMainWindow):
                 x = int(self.xCoordTextBox.toPlainText())
                 y = int(self.yCoordTextBox.toPlainText())
                 self.logTextbox.append("Moving to X=" + str(x) + ",Y=" + str(y))
-                #self.stepperController.move_to_position(x, y)
                 self.sendMoveValues(x, y)
             except ValueError:
                 self.logTextbox.append("ERROR: X and/or Y value is not an integer. Cannot move to position.")
@@ -397,8 +408,6 @@ class MainWindow(QMainWindow):
                 # Draw the corners if they are set.
                 for corner in self.tableCordnerCoords:
                     cv2.circle(frame, (corner[0], corner[1]), 5, (255,255,255), 2)
-
-
 
             self.frameCounter = self.frameCounter + 1
             lowerBoundary = np.array([self.lowerHueSlider.value(), self.lowerSaturationSlider.value(), self.lowerValueSlider.value()])
@@ -446,7 +455,6 @@ class MainWindow(QMainWindow):
                         # cv2.line(frame, collisionPoint, reflectionPoint, (255, 255, 255), thickness=1, lineType=4)
                         # cv2.circle(frame, collisionPoint, 5, (0, 100, 255), -1)
 
-
                         finalPoint = (int(line.get_x(50)), 50)
                         cv2.circle(frame, finalPoint, 5, (100,0,255), -1)
                         cv2.line(frame, puckPos, finalPoint, (255,255,255), thickness=1, lineType=4)
@@ -461,55 +469,14 @@ class MainWindow(QMainWindow):
                                 moveY = 0
                                 # X is inverted
                                 moveX = TABLE_MAX_X - moveX
-                                self.positionsSent += 1
-                                print(f"Sending {self.positionsSent}")
-                                self.sendMoveValues(int(moveX), int(moveY))
-
-                            #moveX, moveY = self.mapCoordinates(finalPoint[0], finalPoint[1], CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH, TABLE_MAX_X, TABLE_MAX_Y)
-                            #cameraX, cameraY = self.mapCoordinates(moveY, moveX, TABLE_MAX_Y, TABLE_MAX_X, CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT)
-
-                            #cv2.circle(frame, (int(cameraX), int(cameraY)), 10, (0, 255, 255), 2)
-
-                            # We only have half the field to work with so half the y.
-                            #moveY = 500                           
+                                if self.botActivated:
+                                    self.positionsSent += 1
+                                    print(f"Sending {self.positionsSent}")
+                                    self.sendMoveValues(int(moveX), int(moveY))
 
                             self.frameCounter = 0
                 except:
                     pass
-
-            # Coordinates from table and camera are inverted.
-            # !!! OUT OF DATE !!!
-            #
-            # Camera:
-            # |----WIDTH (X)---------|
-            # |                      |
-            # | HEIGHT (Y)           |
-            # |                      |
-            # |----------------------|
-            #
-            # Table:
-            # |----Y-----------------|
-            # |                      |
-            # | X                    |
-            # |                      |
-            # |----------------------|
-
-            
-
-            #if self.frameCounter > 5 and x != 0 and y != 0 and abs(speed) > self.speedThresholdSlider.value():
-                #moveY, moveX = self.mapCoordinates(finalPoint[0], finalPoint[1], CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT, TABLE_MAX_Y, TABLE_MAX_X)
-                #cameraX, cameraY = self.mapCoordinates(moveY, moveX, TABLE_MAX_Y, TABLE_MAX_X, CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT)
-
-                #cv2.circle(frame, (int(cameraX), int(cameraY)), 10, (0, 255, 255), 2)
-
-                # We only have half the field to work with so half the y.
-                #moveY = 500
-                #print(f"Move to X:{moveX}, Y:{moveY}")
-                #self.sendMoveValues(int(moveX), int(moveY))
-
-                #self.logTextbox.append(f"Moving based on image to X={int(moveX)}, Y={moveY}...")
-                
-
             
             if len(self.puckPositions) > MAX_PUCK_POSITION_BUFFER:
                 self.puckPositions.popleft()
