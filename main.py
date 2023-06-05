@@ -363,6 +363,11 @@ class MainWindow(QMainWindow):
 
         self.botActivated = False
 
+    def closeEvent(self, event):
+        # Let the window close.
+        event.accept()
+        self.exitApp()
+
     def exitApp(self):
         self.timer.stop()
         self.camera.stop()
@@ -634,6 +639,8 @@ class MainWindow(QMainWindow):
         return True, x, y
 
     def updateImageFromFrame(self, image, frame):
+        # Resize to GUI size.
+        frame = cv2.resize(frame, (DEBUG_WINDOW_FRAME_HEIGHT, DEBUG_WINDOW_FRAME_WIDTH))
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, ch = frame.shape
         bytesPerLine = ch * width
