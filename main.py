@@ -10,6 +10,8 @@ import cv2
 import math
 import numpy as np
 import qdarkstyle
+import time
+from datetime import datetime
 from collections import deque
 from shapely.geometry import LineString, Point
 from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal, QMutex, QMutexLocker
@@ -584,7 +586,6 @@ class MainWindow(QMainWindow):
                             self.frameCounter = 0
                 except:
                     pass
-
             if len(self.puckPositions) > MAX_PUCK_POSITION_BUFFER:
                 self.puckPositions.popleft()
 
@@ -637,6 +638,31 @@ class MainWindow(QMainWindow):
         x = det(d, xdiff) / div
         y = det(d, ydiff) / div
         return True, x, y
+    
+    # Returns collisionPoint, intersectsX, intersectsY
+    def getPositions(self, prevPuckPos, currPuckPos, defenseY):
+        line = Line(prevPuckPos, currPuckPos)
+        if line.get_m() is not None:
+            if line.get_angle() >= 0:  # left edge
+                collision_point = (int(0), int(line.get_y(0)))
+            else:  # right edge
+                collision_point = (int(CAMERA_FRAME_HEIGHT), int(line.get_y(CAMERA_FRAME_WIDTH)))
+
+            # Collides behind the robot -> so no collision at the wall.
+            collidesWithWall = False if collision_point[1] < 0 else True
+
+            yref = collision_point[1] - (currPuckPos[1] - collision_point[1])
+            xref = currPuckPos[0]
+            reflection_point = (xref, yref)
+
+            if collidesWithWall:
+                intersects, intersectsX, intersectsY = self.line_intersection((collision_point, reflection_point), ((0,defenseY), (CAMERA_FRAME_HEIGHT, defenseY)))
+            else:
+                intersects, intersectsX, intersectsY = self.line_intersection((currPuckPos, collision_point), ((0,defenseY), (CAMERA_FRAME_HEIGHT, defenseY)))
+            #cv2.circle(frame, (int(intersectsX), int(intersectsY)), 10, (255, 255, 255), -1) #pink
+            return collision_point, intersectsX, intersectsY
+        else:
+            return None, None, None
 
     def updateImageFromFrame(self, image, frame):
         # Resize to GUI size.
