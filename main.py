@@ -496,40 +496,40 @@ class MainWindow(QMainWindow):
             # Rotate the camera frame so we have it in "portrait mode" and the robot is on top.
             frame = cv2.rotate(frame, rotateCode=cv2.ROTATE_90_CLOCKWISE)
 
-            # if self.cornersApplied:
-            #     # If the corners are set then fit the image.
-            #     # Corners have to be inputted counter clockwise.
-            #     selectedCorners = np.float32(
-            #         [
-            #             [self.tableCordnerCoords[0][0],
-            #                 self.tableCordnerCoords[0][1]],
-            #             [self.tableCordnerCoords[1][0],
-            #                 self.tableCordnerCoords[1][1]],
-            #             [self.tableCordnerCoords[2][0],
-            #                 self.tableCordnerCoords[2][1]],
-            #             [self.tableCordnerCoords[3][0],
-            #                 self.tableCordnerCoords[3][1]],
-            #         ]
-            #     )
+            if self.cornersApplied:
+                # If the corners are set then fit the image.
+                # Corners have to be inputted counter clockwise.
+                selectedCorners = np.float32(
+                    [
+                        [self.tableCordnerCoords[0][0],
+                            self.tableCordnerCoords[0][1]],
+                        [self.tableCordnerCoords[1][0],
+                            self.tableCordnerCoords[1][1]],
+                        [self.tableCordnerCoords[2][0],
+                            self.tableCordnerCoords[2][1]],
+                        [self.tableCordnerCoords[3][0],
+                            self.tableCordnerCoords[3][1]],
+                    ]
+                )
 
-            #     # Calculate transformation matrix.
-            #     matrix = cv2.getPerspectiveTransform(
-            #         selectedCorners, self.originalCorners
-            #     )
-            #     # Warp the image.
-            #     frame = cv2.warpPerspective(
-            #         frame, matrix, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH)
-            #     )
-            #     frame = cv2.resize(
-            #         frame, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH))
+                # Calculate transformation matrix.
+                matrix = cv2.getPerspectiveTransform(
+                    selectedCorners, self.originalCorners
+                )
+                # Warp the image.
+                frame = cv2.warpPerspective(
+                    frame, matrix, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH)
+                )
+                frame = cv2.resize(
+                    frame, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH))
 
-            # if self.cornersApplied == False:
-            #     # Draw the corners if they are set.
-            #     for corner in self.tableCordnerCoords:
-            #         cv2.circle(
-            #             frame, (corner[0], corner[1]), 5, (255, 255, 255), 2)
+            if self.cornersApplied == False:
+                # Draw the corners if they are set.
+                for corner in self.tableCordnerCoords:
+                    cv2.circle(
+                        frame, (corner[0], corner[1]), 5, (255, 255, 255), 2)
 
-            # self.frameCounter = self.frameCounter + 1
+            self.frameCounter = self.frameCounter + 1
             lowerBoundary = np.array(
                 [
                     self.lowerHueSlider.value(),
@@ -546,97 +546,97 @@ class MainWindow(QMainWindow):
             )
             filteredFrame = filterFrameHSV(frame, lowerBoundary, upperBoundary)
 
-            # # Detect the puck and update UI values.
-            # (x, y), radius = detectPuck(
-            #     filteredFrame, lowerBoundary, upperBoundary)
-            # if self.showDebugImages:
-            #     frame = markPuckInFrame(frame, x, y, radius)
-            # self.currentPosition = (x, y)
+            # Detect the puck and update UI values.
+            (x, y), radius = detectPuck(
+                filteredFrame, lowerBoundary, upperBoundary)
+            if self.showDebugImages:
+                frame = markPuckInFrame(frame, x, y, radius)
+            self.currentPosition = (x, y)
 
-            # self.puckPositions.append((x, y))
+            self.puckPositions.append((x, y))
 
-            # self.puckXLabel.setText(str(f"X: {x:.1f}"))
-            # self.puckYLabel.setText(str(f"Y: {y:.1f}"))
-            # self.puckRadiusLabel.setText(str(f"Radius: {radius:.1f}"))
+            self.puckXLabel.setText(str(f"X: {x:.1f}"))
+            self.puckYLabel.setText(str(f"Y: {y:.1f}"))
+            self.puckRadiusLabel.setText(str(f"Radius: {radius:.1f}"))
 
-            # avgPositionX = sum(pos[0] for pos in self.puckPositions) / len(
-            #     self.puckPositions
-            # )
-            # avgPositionY = sum(pos[1] for pos in self.puckPositions) / len(
-            #     self.puckPositions
-            # )
+            avgPositionX = sum(pos[0] for pos in self.puckPositions) / len(
+                self.puckPositions
+            )
+            avgPositionY = sum(pos[1] for pos in self.puckPositions) / len(
+                self.puckPositions
+            )
 
-            # velocity = (x - avgPositionX, y - avgPositionY)
-            # self.puckVecLabel.setText(
-            #     f"Vec: {velocity[0]:.1f}, {velocity[1]:.1f}")
+            velocity = (x - avgPositionX, y - avgPositionY)
+            self.puckVecLabel.setText(
+                f"Vec: {velocity[0]:.1f}, {velocity[1]:.1f}")
 
-            # speed = math.sqrt(
-            #     (velocity[0] * velocity[0] + velocity[1] * velocity[1]))
-            # self.puckSpeedLabel.setText(f"Speed: {speed:.1f}")
+            speed = math.sqrt(
+                (velocity[0] * velocity[0] + velocity[1] * velocity[1]))
+            self.puckSpeedLabel.setText(f"Speed: {speed:.1f}")
 
-            # puckPos = (int(self.currentPosition[0]), int(
-            #     self.currentPosition[1]))
+            puckPos = (int(self.currentPosition[0]), int(
+                self.currentPosition[1]))
 
-            # goingBack = puckPos[1] > avgPositionY
+            goingBack = puckPos[1] > avgPositionY
 
-            # if speed > self.speedThresholdSlider.value() and not goingBack:
-            #     line = Line((avgPositionX, avgPositionY), self.currentPosition)
-            #     try:
-            #         if line.get_m() is not None:
-            #             # if line.get_angle() >= 0: # left edge
-            #             #     collisionPoint = (int(0), int(line.get_y(0)))
-            #             # else: # right edge
-            #             #     collisionPoint = (int(CAMERA_FRAME_HEIGHT), int(line.get_y(CAMERA_FRAME_HEIGHT)))
+            if speed > self.speedThresholdSlider.value() and not goingBack:
+                line = Line((avgPositionX, avgPositionY), self.currentPosition)
+                try:
+                    if line.get_m() is not None:
+                        # if line.get_angle() >= 0: # left edge
+                        #     collisionPoint = (int(0), int(line.get_y(0)))
+                        # else: # right edge
+                        #     collisionPoint = (int(CAMERA_FRAME_HEIGHT), int(line.get_y(CAMERA_FRAME_HEIGHT)))
 
-            #             # reflectionLine = Line(collisionPoint, None, (1 / line.get_m()))
-            #             # reflectionPoint = (int(CAMERA_FRAME_HEIGHT - reflectionLine.get_x(0)), int(0))
-            #             # cv2.circle(frame, reflectionPoint, 5, (100, 0, 255), -1)
-            #             # cv2.line(frame, puckPos, collisionPoint, (255, 255, 255), thickness=1, lineType=4)
-            #             # cv2.line(frame, collisionPoint, reflectionPoint, (255, 255, 255), thickness=1, lineType=4)
-            #             # cv2.circle(frame, collisionPoint, 5, (0, 100, 255), -1)
+                        # reflectionLine = Line(collisionPoint, None, (1 / line.get_m()))
+                        # reflectionPoint = (int(CAMERA_FRAME_HEIGHT - reflectionLine.get_x(0)), int(0))
+                        # cv2.circle(frame, reflectionPoint, 5, (100, 0, 255), -1)
+                        # cv2.line(frame, puckPos, collisionPoint, (255, 255, 255), thickness=1, lineType=4)
+                        # cv2.line(frame, collisionPoint, reflectionPoint, (255, 255, 255), thickness=1, lineType=4)
+                        # cv2.circle(frame, collisionPoint, 5, (0, 100, 255), -1)
 
-            #             finalPoint = (int(line.get_x(50)), 50)
-            #             if self.showDebugImages:
-            #                 cv2.circle(frame, finalPoint, 5, (100, 0, 255), -1)
-            #                 cv2.line(
-            #                     frame,
-            #                     puckPos,
-            #                     finalPoint,
-            #                     (255, 255, 255),
-            #                     thickness=1,
-            #                     lineType=4,
-            #                 )
+                        finalPoint = (int(line.get_x(50)), 50)
+                        if self.showDebugImages:
+                            cv2.circle(frame, finalPoint, 5, (100, 0, 255), -1)
+                            cv2.line(
+                                frame,
+                                puckPos,
+                                finalPoint,
+                                (255, 255, 255),
+                                thickness=1,
+                                lineType=4,
+                            )
 
-            #             # Puck movement.
-            #             if self.frameCounter > 2 and x != 0 and y != 0:
-            #                 # self.logTextbox.append(f"Final Point: X={finalPoint[0]}, Y={finalPoint[1]}")
+                        # Puck movement.
+                        if self.frameCounter > 2 and x != 0 and y != 0:
+                            # self.logTextbox.append(f"Final Point: X={finalPoint[0]}, Y={finalPoint[1]}")
 
-            #                 if (
-            #                     finalPoint[0] > 20
-            #                     and finalPoint[0] < CAMERA_FRAME_HEIGHT - 20
-            #                 ):
-            #                     moveX, moveY = self.mapCoordinates(
-            #                         finalPoint[0],
-            #                         finalPoint[1],
-            #                         CAMERA_FRAME_HEIGHT,
-            #                         CAMERA_FRAME_WIDTH,
-            #                         TABLE_MAX_X,
-            #                         TABLE_MAX_Y,
-            #                     )
-            #                     # self.logTextbox.append(f"Move To: X={moveX}, Y={moveY}")
-            #                     moveY = 0
-            #                     # X is inverted
-            #                     moveX = TABLE_MAX_X - moveX
-            #                     if self.botActivated:
-            #                         self.positionsSent += 1
-            #                         print(f"Sending {self.positionsSent}")
-            #                         self.sendMoveValues(int(moveX), int(moveY))
+                            if (
+                                finalPoint[0] > 20
+                                and finalPoint[0] < CAMERA_FRAME_HEIGHT - 20
+                            ):
+                                moveX, moveY = self.mapCoordinates(
+                                    finalPoint[0],
+                                    finalPoint[1],
+                                    CAMERA_FRAME_HEIGHT,
+                                    CAMERA_FRAME_WIDTH,
+                                    TABLE_MAX_X,
+                                    TABLE_MAX_Y,
+                                )
+                                # self.logTextbox.append(f"Move To: X={moveX}, Y={moveY}")
+                                moveY = 0
+                                # X is inverted
+                                moveX = TABLE_MAX_X - moveX
+                                if self.botActivated:
+                                    self.positionsSent += 1
+                                    print(f"Sending {self.positionsSent}")
+                                    self.sendMoveValues(int(moveX), int(moveY))
 
-            #                 self.frameCounter = 0
-            #     except:
-            #         pass
-            # if len(self.puckPositions) > MAX_PUCK_POSITION_BUFFER:
-            #     self.puckPositions.popleft()
+                            self.frameCounter = 0
+                except:
+                    pass
+            if len(self.puckPositions) > MAX_PUCK_POSITION_BUFFER:
+                self.puckPositions.popleft()
 
             if self.showDebugImages:
                 self.updateImageFromFrame(self.cameraImageLabel, frame)
