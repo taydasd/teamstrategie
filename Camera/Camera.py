@@ -8,10 +8,9 @@ class Camera:
     def __init__(
         self, camera_index, frame_width, frame_height, focus, buffer_size, fps
     ):
-        cv2.ocl.setUseOpenCL(True)
         self.stream = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
         self.stream.set(cv2.CAP_PROP_HW_ACCELERATION, cv2.VIDEO_ACCELERATION_ANY)
-        self.stream.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('P', 'M', 'I', '1'))
+        self.stream.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('X', 'V', 'I', 'D'))
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
         self.stream.set(cv2.CAP_PROP_FPS, fps)
