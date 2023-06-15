@@ -608,10 +608,7 @@ class MainWindow(QMainWindow):
                         if self.frameCounter > 2 and x != 0 and y != 0:
                             # self.logTextbox.append(f"Final Point: X={finalPoint[0]}, Y={finalPoint[1]}")
 
-                            if (
-                                finalPoint[0] > 20
-                                and finalPoint[0] < CAMERA_FRAME_HEIGHT - 20
-                            ):
+                            if 20 < finalPoint[0] < CAMERA_FRAME_HEIGHT - 20:
                                 moveX, moveY = self.mapCoordinates(
                                     finalPoint[0],
                                     finalPoint[1],
@@ -639,9 +636,9 @@ class MainWindow(QMainWindow):
                 self.updateImageFromFrame(self.cameraImageLabel, frame)
                 self.updateImageFromFrame(
                     self.filteredImageLabel, filteredFrame)
-                
-            
-            # Timing         
+
+
+            # Timing
             frameTimeMs = (self.currentFrameTimestamp - self.lastFrameTimestamp).microseconds / 1000
             self.lastFrameTimestamp = self.currentFrameTimestamp
             fps = 1000 / frameTimeMs
