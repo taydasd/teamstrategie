@@ -520,7 +520,7 @@ class MainWindow(QMainWindow):
                 frame = cv2.resize(
                     frame, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH))
 
-            if self.cornersApplied == False:
+            if not self.cornersApplied:
                 # Draw the corners if they are set.
                 for corner in self.tableCordnerCoords:
                     cv2.circle(
