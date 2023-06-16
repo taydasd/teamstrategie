@@ -384,6 +384,14 @@ class MainWindow(QMainWindow):
 
         self.showDebugImages = True
 
+        self.wasPuckGoingToRobot = False
+        self.isPuckGoingToRobot = False
+        self.predictionMade = False
+        self.predictionLine = Line((0, 0), (0, 0))
+        self.predictedPoint = (0,0)
+
+        self.testTime = datetime.now()
+
         self.currentFrameTimestamp = datetime.now()
         self.lastFrameTimestamp = datetime.now()
 
@@ -452,9 +460,10 @@ class MainWindow(QMainWindow):
                 TABLE_MAX_X,
                 TABLE_MAX_Y,
             )
-            #moveY *= 2
+            # moveY *= 2
             moveX = TABLE_MAX_X - moveX
-            self.logTextbox.append(f"Clicked on {x},{y} in Image and moving to {int(moveX)},{int(moveY)}.")
+            self.logTextbox.append(
+                f"Clicked on {x},{y} in Image and moving to {int(moveX)},{int(moveY)}.")
             self.sendMoveValues(int(moveX), int(moveY))
 
     def sendMoveValues(self, x, y):
@@ -502,6 +511,12 @@ class MainWindow(QMainWindow):
             )
 
     def updateImages(self):
+        # lastTime = self.testTime
+        # self.testTime = datetime.now()
+        # diffMs = (self.testTime - lastTime).microseconds / 1000
+        # print(f"Diff: {diffMs}")
+
+
         if self.camera.new_frame:
             self.currentFrameTimestamp = datetime.now()
 
@@ -563,89 +578,142 @@ class MainWindow(QMainWindow):
                 frame = markRobotRectangle(frame)
             self.currentPosition = (x, y)
 
-            self.puckPositions.append((x, y))
+            self.puckXLabel.setText(str(f"X: {x:.0f}"))
+            self.puckYLabel.setText(str(f"Y: {y:.0f}"))
+            self.puckRadiusLabel.setText(str(f"Radius: {radius:.0f}"))
 
-            self.puckXLabel.setText(str(f"X: {x:.1f}"))
-            self.puckYLabel.setText(str(f"Y: {y:.1f}"))
-            self.puckRadiusLabel.setText(str(f"Radius: {radius:.1f}"))
+            self.isPuckGoingToRobot = self.currentPosition[1] < self.lastPosition[1] and (
+                self.lastPosition[1] - self.currentPosition[1]) > 2
 
-            avgPositionX = sum(pos[0] for pos in self.puckPositions) / len(
-                self.puckPositions
-            )
-            avgPositionY = sum(pos[1] for pos in self.puckPositions) / len(
-                self.puckPositions
-            )
-
-            velocity = (x - avgPositionX, y - avgPositionY)
-            self.puckVecLabel.setText(
-                f"Vec: {velocity[0]:.1f}, {velocity[1]:.1f}")
-
-            speed = math.sqrt(
-                (velocity[0] * velocity[0] + velocity[1] * velocity[1]))
-            self.puckSpeedLabel.setText(f"Speed: {speed:.1f}")
-
-            puckPos = (int(self.currentPosition[0]), int(
-                self.currentPosition[1]))
-
-            goingBack = puckPos[1] > avgPositionY
-
-            if speed > self.speedThresholdSlider.value() and not goingBack:
-                line = Line((avgPositionX, avgPositionY), self.currentPosition)
+            # Check if the puck is going in the direction of the robot.
+            if self.isPuckGoingToRobot and self.wasPuckGoingToRobot:
+                self.predictionLine = Line(
+                    self.lastPosition, self.currentPosition)
                 try:
-                    if line.get_m() is not None:
-                        # if line.get_angle() >= 0: # left edge
-                        #     collisionPoint = (int(0), int(line.get_y(0)))
-                        # else: # right edge
-                        #     collisionPoint = (int(CAMERA_FRAME_HEIGHT), int(line.get_y(CAMERA_FRAME_HEIGHT)))
-
-                        # reflectionLine = Line(collisionPoint, None, (1 / line.get_m()))
-                        # reflectionPoint = (int(CAMERA_FRAME_HEIGHT - reflectionLine.get_x(0)), int(0))
-                        # cv2.circle(frame, reflectionPoint, 5, (100, 0, 255), -1)
-                        # cv2.line(frame, puckPos, collisionPoint, (255, 255, 255), thickness=1, lineType=4)
-                        # cv2.line(frame, collisionPoint, reflectionPoint, (255, 255, 255), thickness=1, lineType=4)
-                        # cv2.circle(frame, collisionPoint, 5, (0, 100, 255), -1)
-
-                        finalPoint = (int(line.get_x(100)), 100)
-                        if self.showDebugImages:
-                            cv2.circle(frame, finalPoint, 5, (100, 0, 255), -1)
-                            cv2.line(
-                                frame,
-                                puckPos,
-                                finalPoint,
-                                (255, 255, 255),
-                                thickness=1,
-                                lineType=4,
+                    if self.predictionLine.get_m() is not None and self.predictionMade == False:
+                        self.positionsSent += 1
+                        print(f"Making prediction {self.positionsSent}")
+                        self.predictionMade = True
+                        self.predictedPoint = (int(self.predictionLine.get_x(100)), 100)
+                        if 20 < self.predictedPoint[0] < CAMERA_FRAME_HEIGHT - 20:
+                            moveX, moveY = self.mapCoordinates(
+                                self.predictedPoint[0],
+                                self.predictedPoint[1],
+                                CAMERA_FRAME_HEIGHT,
+                                CAMERA_FRAME_ROBOT_MAX_Y,
+                                TABLE_MAX_X,
+                                TABLE_MAX_Y,
                             )
-
-                        # Puck movement.
-                        if self.frameCounter > 2 and x != 0 and y != 0:
+                            #moveY *= 2
+                            moveX = TABLE_MAX_X - moveX
                             self.logTextbox.append(
-                                f"Final Point: X={finalPoint[0]}, Y={finalPoint[1]}")
+                                f"Move To: X={moveX:.0f}, Y={moveY:.0f}")
+                            if self.botActivated:
+                                self.positionsSent += 1
+                                print(
+                                    f"Sending {self.positionsSent} (X:{int(moveX)}, Y:{int(moveY)})")
+                                self.sendMoveValues(int(moveX), int(moveY))
 
-                            if 20 < finalPoint[0] < CAMERA_FRAME_HEIGHT - 20:
-                                moveX, moveY = self.mapCoordinates(
-                                    finalPoint[0],
-                                    finalPoint[1],
-                                    CAMERA_FRAME_HEIGHT,                                    
-                                    CAMERA_FRAME_ROBOT_MAX_Y,
-                                    TABLE_MAX_X,
-                                    TABLE_MAX_Y,
-                                )
-                                #moveY *= 2
-                                moveX = TABLE_MAX_X - moveX
-                                self.logTextbox.append(
-                                    f"Move To: X={moveX:.0f}, Y={moveY:.0f}")
-                                if self.botActivated:
-                                    self.positionsSent += 1
-                                    print(
-                                        f"Sending {self.positionsSent} (X:{int(moveX)}, Y:{int(moveY)})")
-                                    self.sendMoveValues(int(moveX), int(moveY))
-
-                            self.frameCounter = 0
                 except:
                     pass
-            if len(self.puckPositions) > MAX_PUCK_POSITION_BUFFER:
-                self.puckPositions.popleft()
+            else:
+                self.predictionMade = False
+
+            self.wasPuckGoingToRobot = self.isPuckGoingToRobot
+            self.lastPosition = self.currentPosition
+
+            # Draw the current prediction if we have one.
+            if self.predictionMade and self.predictionLine.get_m() is not None:
+                if self.showDebugImages:
+                    cv2.circle(frame, self.predictedPoint, 5, (255, 0, 255), -1)
+                    cv2.line(
+                        frame,
+                        (int(self.currentPosition[0]), int(self.currentPosition[1])),
+                        self.predictedPoint,
+                        (255, 0, 0),
+                        thickness=1,
+                        lineType=4,
+                    )
+
+            # self.puckPositions.append((x, y))
+
+            # avgPositionX = sum(pos[0] for pos in self.puckPositions) / len(
+            #     self.puckPositions
+            # )
+            # avgPositionY = sum(pos[1] for pos in self.puckPositions) / len(
+            #     self.puckPositions
+            # )
+
+            # velocity = (x - avgPositionX, y - avgPositionY)
+            # self.puckVecLabel.setText(
+            #     f"Vec: {velocity[0]:.1f}, {velocity[1]:.1f}")
+
+            # speed = math.sqrt(
+            #     (velocity[0] * velocity[0] + velocity[1] * velocity[1]))
+            # self.puckSpeedLabel.setText(f"Speed: {speed:.1f}")
+
+            # puckPos = (int(self.currentPosition[0]), int(
+            #     self.currentPosition[1]))
+
+            # goingBack = puckPos[1] > avgPositionY
+
+            # if speed > self.speedThresholdSlider.value() and not goingBack:
+            #     line = Line((avgPositionX, avgPositionY), self.currentPosition)
+            #     try:
+            #         if line.get_m() is not None:
+            # if line.get_angle() >= 0: # left edge
+            #     collisionPoint = (int(0), int(line.get_y(0)))
+            # else: # right edge
+            #     collisionPoint = (int(CAMERA_FRAME_HEIGHT), int(line.get_y(CAMERA_FRAME_HEIGHT)))
+
+            # reflectionLine = Line(collisionPoint, None, (1 / line.get_m()))
+            # reflectionPoint = (int(CAMERA_FRAME_HEIGHT - reflectionLine.get_x(0)), int(0))
+            # cv2.circle(frame, reflectionPoint, 5, (100, 0, 255), -1)
+            # cv2.line(frame, puckPos, collisionPoint, (255, 255, 255), thickness=1, lineType=4)
+            # cv2.line(frame, collisionPoint, reflectionPoint, (255, 255, 255), thickness=1, lineType=4)
+            # cv2.circle(frame, collisionPoint, 5, (0, 100, 255), -1)
+
+            # finalPoint = (int(line.get_x(100)), 100)
+            # if self.showDebugImages:
+            #     cv2.circle(frame, finalPoint, 5, (100, 0, 255), -1)
+            #     cv2.line(
+            #         frame,
+            #         puckPos,
+            #         finalPoint,
+            #         (255, 255, 255),
+            #         thickness=1,
+            #         lineType=4,
+            #     )
+
+            # Puck movement.
+            #             if self.frameCounter > 2 and x != 0 and y != 0:
+            #                 self.logTextbox.append(
+            #                     f"Final Point: X={finalPoint[0]}, Y={finalPoint[1]}")
+
+            #                 if 20 < finalPoint[0] < CAMERA_FRAME_HEIGHT - 20:
+            #                     moveX, moveY = self.mapCoordinates(
+            #                         finalPoint[0],
+            #                         finalPoint[1],
+            #                         CAMERA_FRAME_HEIGHT,
+            #                         CAMERA_FRAME_ROBOT_MAX_Y,
+            #                         TABLE_MAX_X,
+            #                         TABLE_MAX_Y,
+            #                     )
+            #                     #moveY *= 2
+            #                     moveX = TABLE_MAX_X - moveX
+            #                     self.logTextbox.append(
+            #                         f"Move To: X={moveX:.0f}, Y={moveY:.0f}")
+            #                     if self.botActivated:
+            #                         self.positionsSent += 1
+            #                         print(
+            #                             f"Sending {self.positionsSent} (X:{int(moveX)}, Y:{int(moveY)})")
+            #                         self.sendMoveValues(int(moveX), int(moveY))
+
+            #                 self.frameCounter = 0
+            #     except:
+            #         pass
+            # if len(self.puckPositions) > MAX_PUCK_POSITION_BUFFER:
+            #     self.puckPositions.popleft()
 
             if self.showDebugImages:
                 self.updateImageFromFrame(self.cameraImageLabel, frame)
@@ -746,7 +814,6 @@ class MainWindow(QMainWindow):
                        bytesPerLine, QImage.Format_RGB888)
         pixmap = QPixmap(qtImg)
         image.setPixmap(pixmap)
-        
 
 
 if __name__ == "__main__":
