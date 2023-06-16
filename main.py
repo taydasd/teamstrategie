@@ -436,8 +436,8 @@ class MainWindow(QMainWindow):
 
     def getImageClickPos(self, event):
         # The Camera image is double the size of the debug window image.
-        x = event.pos().x() * 2
-        y = event.pos().y() * 2
+        x = event.pos().x()
+        y = event.pos().y()
         print(f"Clicked x:{x}, y:{y}")
         # 1 is left click, 2 is right click
         mouseButton = event.button()
@@ -493,6 +493,7 @@ class MainWindow(QMainWindow):
             self.currentFrameTimestamp = datetime.now()
 
             frame = self.camera.get_current_frame()
+
             if self.cornersApplied:
                 # If the corners are set then fit the image.
                 # Corners have to be inputted counter clockwise.
@@ -722,8 +723,7 @@ class MainWindow(QMainWindow):
 
     def updateImageFromFrame(self, image, frame):
         # Resize to GUI size.
-        frame = cv2.resize(
-            frame, (DEBUG_WINDOW_FRAME_HEIGHT, DEBUG_WINDOW_FRAME_WIDTH))
+        #frame = cv2.resize(frame, (DEBUG_WINDOW_FRAME_HEIGHT, DEBUG_WINDOW_FRAME_WIDTH))
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, ch = frame.shape
         bytesPerLine = ch * width

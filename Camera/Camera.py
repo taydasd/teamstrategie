@@ -1,6 +1,7 @@
 import cv2
 from threading import Thread
 import time
+import platform
 
 
 class Camera:
@@ -8,7 +9,11 @@ class Camera:
             self, camera_index, frame_width, frame_height, focus, buffer_size, fps
     ):
         self.fps = fps
-        self.stream = cv2.VideoCapture(camera_index)
+        # Check if we are running on windows because then we need the CAP_DSHOW flag.
+        if platform.system() == "Windows":
+            self.stream = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
+        else:
+            self.stream = cv2.VideoCapture(camera_index)
         self.stream.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('X', 'V', 'I', 'D'))
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
