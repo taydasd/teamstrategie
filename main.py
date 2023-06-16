@@ -34,7 +34,7 @@ from PyQt5.QtWidgets import (
 from Constants import *
 from Camera import Camera
 from StepperController import StepperController
-from Processing.ProcessFrame import filterFrameHSV, detectPuck, markPuckInFrame
+from Processing.ProcessFrame import filterFrameHSV, detectPuck, markPuckInFrame, markRobotRectangle
 from Processing.Line import Line
 
 
@@ -443,6 +443,19 @@ class MainWindow(QMainWindow):
         mouseButton = event.button()
         if mouseButton == 1 and len(self.tableCordnerCoords) < 4:
             self.tableCordnerCoords.append((x, y))
+        elif mouseButton == 2:
+            moveX, moveY = self.mapCoordinates(
+                x,
+                y,
+                CAMERA_FRAME_HEIGHT,
+                CAMERA_FRAME_ROBOT_MAX_Y,
+                TABLE_MAX_X,
+                TABLE_MAX_Y,
+            )
+            #moveY *= 2
+            moveX = TABLE_MAX_X - moveX
+            self.logTextbox.append(f"Clicked on {x},{y} in Image and moving to {int(moveX)},{int(moveY)}.")
+            self.sendMoveValues(int(moveX), int(moveY))
 
     def sendMoveValues(self, x, y):
         self.moveWorker.set_values(x, y)
@@ -496,7 +509,7 @@ class MainWindow(QMainWindow):
 
             if self.cornersApplied:
                 # If the corners are set then fit the image.
-                # Corners have to be inputted counter clockwise.
+                # Corners have to be inputted clockwise.
                 selectedCorners = np.float32(
                     [
                         [self.tableCordnerCoords[0][0],
@@ -518,8 +531,6 @@ class MainWindow(QMainWindow):
                 frame = cv2.warpPerspective(
                     frame, matrix, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH)
                 )
-                frame = cv2.resize(
-                    frame, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH))
 
             if not self.cornersApplied:
                 # Draw the corners if they are set.
@@ -549,6 +560,7 @@ class MainWindow(QMainWindow):
                 filteredFrame, lowerBoundary, upperBoundary)
             if self.showDebugImages:
                 frame = markPuckInFrame(frame, x, y, radius)
+                frame = markRobotRectangle(frame)
             self.currentPosition = (x, y)
 
             self.puckPositions.append((x, y))
@@ -593,7 +605,7 @@ class MainWindow(QMainWindow):
                         # cv2.line(frame, collisionPoint, reflectionPoint, (255, 255, 255), thickness=1, lineType=4)
                         # cv2.circle(frame, collisionPoint, 5, (0, 100, 255), -1)
 
-                        finalPoint = (int(line.get_x(50)), 50)
+                        finalPoint = (int(line.get_x(100)), 100)
                         if self.showDebugImages:
                             cv2.circle(frame, finalPoint, 5, (100, 0, 255), -1)
                             cv2.line(
@@ -607,24 +619,26 @@ class MainWindow(QMainWindow):
 
                         # Puck movement.
                         if self.frameCounter > 2 and x != 0 and y != 0:
-                            # self.logTextbox.append(f"Final Point: X={finalPoint[0]}, Y={finalPoint[1]}")
+                            self.logTextbox.append(
+                                f"Final Point: X={finalPoint[0]}, Y={finalPoint[1]}")
 
                             if 20 < finalPoint[0] < CAMERA_FRAME_HEIGHT - 20:
                                 moveX, moveY = self.mapCoordinates(
                                     finalPoint[0],
                                     finalPoint[1],
-                                    CAMERA_FRAME_HEIGHT,
-                                    CAMERA_FRAME_WIDTH,
+                                    CAMERA_FRAME_HEIGHT,                                    
+                                    CAMERA_FRAME_ROBOT_MAX_Y,
                                     TABLE_MAX_X,
                                     TABLE_MAX_Y,
                                 )
-                                # self.logTextbox.append(f"Move To: X={moveX}, Y={moveY}")
-                                moveY = 0
-                                # X is inverted
+                                #moveY *= 2
                                 moveX = TABLE_MAX_X - moveX
+                                self.logTextbox.append(
+                                    f"Move To: X={moveX:.0f}, Y={moveY:.0f}")
                                 if self.botActivated:
                                     self.positionsSent += 1
-                                    print(f"Sending {self.positionsSent}")
+                                    print(
+                                        f"Sending {self.positionsSent} (X:{int(moveX)}, Y:{int(moveY)})")
                                     self.sendMoveValues(int(moveX), int(moveY))
 
                             self.frameCounter = 0
@@ -638,12 +652,13 @@ class MainWindow(QMainWindow):
                 self.updateImageFromFrame(
                     self.filteredImageLabel, filteredFrame)
 
-
             # Timing
-            frameTimeMs = (self.currentFrameTimestamp - self.lastFrameTimestamp).microseconds / 1000
+            frameTimeMs = (self.currentFrameTimestamp -
+                           self.lastFrameTimestamp).microseconds / 1000
             self.lastFrameTimestamp = self.currentFrameTimestamp
             fps = 1000 / frameTimeMs
-            self.frameTimeLabel.setText(f"Frame Time: {frameTimeMs:.0f}ms ({fps:.0f} FPS)")
+            self.frameTimeLabel.setText(
+                f"Frame Time: {frameTimeMs:.0f}ms ({fps:.0f} FPS)")
 
     def mapCoordinates(
         self, x, y, maxWidthFrom, maxHeightFrom, maxWidthTo, maxHeightTo
@@ -723,7 +738,7 @@ class MainWindow(QMainWindow):
 
     def updateImageFromFrame(self, image, frame):
         # Resize to GUI size.
-        #frame = cv2.resize(frame, (DEBUG_WINDOW_FRAME_HEIGHT, DEBUG_WINDOW_FRAME_WIDTH))
+        # frame = cv2.resize(frame, (DEBUG_WINDOW_FRAME_HEIGHT, DEBUG_WINDOW_FRAME_WIDTH))
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, ch = frame.shape
         bytesPerLine = ch * width
@@ -731,6 +746,7 @@ class MainWindow(QMainWindow):
                        bytesPerLine, QImage.Format_RGB888)
         pixmap = QPixmap(qtImg)
         image.setPixmap(pixmap)
+        
 
 
 if __name__ == "__main__":

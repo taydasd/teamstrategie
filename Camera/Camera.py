@@ -2,6 +2,7 @@ import cv2
 from threading import Thread
 import time
 import platform
+import numpy as np
 
 
 class Camera:
@@ -14,7 +15,10 @@ class Camera:
             self.stream = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
         else:
             self.stream = cv2.VideoCapture(camera_index)
-        self.stream.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('X', 'V', 'I', 'D'))
+        #self.stream.set(cv2.CAP_PROP_SETTINGS, 1)
+        #self.stream.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('X', 'V', 'I', 'D'))
+        #self.stream.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('m', 'j', 'p', 'g'))
+        self.stream.set(cv2.CAP_PROP_HW_ACCELERATION, cv2.VIDEO_ACCELERATION_ANY)
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
         self.stream.set(cv2.CAP_PROP_FPS, fps)
@@ -43,8 +47,11 @@ class Camera:
                 self.stop()
             else:
                 (self.grabbed, frame) = self.stream.read()
-                frame = cv2.rotate(frame, rotateCode=cv2.ROTATE_90_CLOCKWISE)
-                self.frame = cv2.flip(frame, 1)  # Flip horizontally
+                self.frame = cv2.rotate(
+                    frame, rotateCode=cv2.ROTATE_90_CLOCKWISE)
+                self.frame = cv2.flip(self.frame, 1)  # Flip horizontally
+                # Flip again to mirror so the bot starts in the top right corner.
+                self.frame = cv2.flip(self.frame, 1)
                 self.new_frame = True
             elapsed_time = time.time() - start_time
             time.sleep(max(0, frame_time - elapsed_time))

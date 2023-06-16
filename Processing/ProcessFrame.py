@@ -1,6 +1,7 @@
 import cv2
 import math
 import numpy as np
+from Constants import *
 
 def filterFrameHSV(frame, lowerBoundary, upperBoundary):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -31,4 +32,9 @@ def markPuckInFrame(frame, x, y, radius):
     radius = int(radius)
     # Draw a circle around the puck in the unfiltered image.
     cv2.circle(frame, center, radius, (0,0,255), 2)
+    return frame
+
+def markRobotRectangle(frame):
+    # Only needs top left and bottom right corner.
+    cv2.rectangle(frame, (0,0, CAMERA_FRAME_HEIGHT, CAMERA_FRAME_ROBOT_MAX_Y), (0,0,255), 1)
     return frame
