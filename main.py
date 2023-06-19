@@ -403,6 +403,8 @@ class MainWindow(QMainWindow):
         self.wasPuckGoingToRobot = False
         self.isPuckGoingToRobot = False
         self.predictionMade = False
+        self.puckIsGoingLeft = False
+        self.puckWasGoingLeft = False
 
         self.predictionLine = Line((0, 0), (0, 0))
         self.predictedPoint = (0, 0)
@@ -412,6 +414,7 @@ class MainWindow(QMainWindow):
         self.savedPoint = (0, 0)
 
         self.wentBackToGoal = False
+        self.attacked = False
 
         self.testTime = datetime.now()
 
@@ -613,10 +616,13 @@ class MainWindow(QMainWindow):
 
             self.isPuckGoingToRobot = self.currentPosition[1] < self.lastPosition[1] and (
                 self.lastPosition[1] - self.currentPosition[1]) > 2
+            
+            self.puckIsGoingLeft = self.currentPosition[0] < self.lastPosition[0] and (
+                self.lastPosition[0] - self.currentPosition[0]) > 5
 
             # Check if the puck is going in the direction of the robot.
             if self.isPuckGoingToRobot and self.wasPuckGoingToRobot:
-                if not self.predictionMade:
+                if not self.predictionMade or self.puckIsGoingLeft != self.puckWasGoingLeft:
                     print(f"Predicting {self.positionsSent}")
                     self.puckCollides = False
                     self.predictionLine = Line(
@@ -661,6 +667,7 @@ class MainWindow(QMainWindow):
                             self.positionsSent += 1
                             self.predictionMade = True
                             self.wentBackToGoal = False
+                            self.attacked = False
 
                             if 20 < self.predictedPoint[0] < CAMERA_FRAME_HEIGHT - 20:
                                 moveX, moveY = self.mapCoordinates(
@@ -683,20 +690,37 @@ class MainWindow(QMainWindow):
                     except:
                         pass
             else:
-                self.predictionMade = False
-                if self.wentBackToGoal == False:
-                    self.wentBackToGoal = True
+                if self.attacked == False:
+                    self.attacked = True
+                    # Attack then move back.
                     moveX, moveY = self.mapCoordinates(
-                        (CAMERA_FRAME_HEIGHT / 2),
-                        DEFENSIVE_LINE,
+                        self.currentPosition[0],
+                        self.currentPosition[1],
                         CAMERA_FRAME_HEIGHT,
                         CAMERA_FRAME_ROBOT_MAX_Y,
                         TABLE_MAX_X,
                         TABLE_MAX_Y,
                     )
+                    # moveY *= 2
+                    moveX = TABLE_MAX_X - moveX
                     self.sendMoveValues(int(moveX), int(moveY))
 
+
+                    self.predictionMade = False
+                    if self.wentBackToGoal == False:
+                        self.wentBackToGoal = True
+                        moveX, moveY = self.mapCoordinates(
+                            (CAMERA_FRAME_HEIGHT / 2),
+                            DEFENSIVE_LINE,
+                            CAMERA_FRAME_HEIGHT,
+                            CAMERA_FRAME_ROBOT_MAX_Y,
+                            TABLE_MAX_X,
+                            TABLE_MAX_Y,
+                        )
+                        self.sendMoveValues(int(moveX), int(moveY))
+
             self.wasPuckGoingToRobot = self.isPuckGoingToRobot
+            self.puckWasGoingLeft = self.puckIsGoingLeft
             self.lastPosition = self.currentPosition
 
             # Draw the current prediction if we have one.
