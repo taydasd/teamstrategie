@@ -4,17 +4,18 @@
 # #controller = StepperController("COM4", 115200)
 # camera = Camera(1, 60)
 # userInterface = UserInterface(None, camera)
-import math
-import sys
-from collections import deque
-from datetime import datetime
-from threading import Thread
 
+import sys
 import cv2
+import math
 import numpy as np
 import qdarkstyle
-import self as self
-from PyQt5.QtCore import Qt, QTimer, QThread, QMutex
+import time
+from datetime import datetime
+from collections import deque
+from queue import Queue
+from shapely.geometry import LineString, Point
+from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal, QMutex, QMutexLocker
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import (
     QApplication,
@@ -27,15 +28,59 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QWidget,
+    QSizePolicy,
     QSlider,
 )
 
-from Camera import Camera
 from Constants import *
-from Processing.Line import Line
-from Processing.ProcessFrame import filterFrameHSV, detectPuck, markPuckInFrame, markRobotRectangle
+from Camera import Camera
 from StepperController import StepperController
+from Processing.ProcessFrame import filterFrameHSV, detectPuck, markPuckInFrame, markRobotRectangle
+from Processing.Line import Line
 
+
+# class MoveWorker(QThread):
+#     def __init__(self, stepperController, parent=None):
+#         super().__init__(parent)
+#         self.mutex = QMutex()
+#         self.stepperController = stepperController
+#         self.x = None
+#         self.y = None
+
+#     def run(self):
+#         while True:
+#             # Wait for x and y to be set by the main thread
+#             # with QMutexLocker(self.mutex):
+#             while self.x is None or self.y is None:
+#                 # self.mutex.unlock()
+#                 self.msleep(1)
+#                 # self.mutex.lock()
+#             x, y = self.x, self.y
+#             self.x = None
+#             self.y = None
+#             # print(f"Moving X={x}, Y={y}")
+#             if self.stepperController != None:
+#                 self.stepperController.move_to_position(int(x), int(y))
+
+#     def set_values(self, x, y):
+#         # with QMutexLocker(self.mutex):
+#         self.x = x
+#         self.y = y
+
+class MoveWorker(QThread):
+    def __init__(self, stepperController, parent=None):
+        super().__init__(parent)
+        self.queue = Queue()
+        self.stepperController = stepperController
+
+    def run(self):
+        while True:
+            x, y = self.queue.get()  # Blocks until there are values in the queue
+            if self.stepperController is not None:
+                self.stepperController.move_to_position(int(x), int(y))
+
+    def set_values(self, x, y):
+        self.queue.put((x, y))
 
 
 class MainWindow(QMainWindow):
@@ -284,10 +329,9 @@ class MainWindow(QMainWindow):
         self.hboxMain.addLayout(self.vboxRight)
 
         # Create a timer to continuously update the camera image
-
-       # self.timer = QTimer(self)
-        #self.timer.timeout.connect(self.updateImages)
-        #self.timer.start(100)
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.updateImages)
+        self.timer.start(1)
 
         # Camera used for image.
         self.camera = Camera(
@@ -298,21 +342,21 @@ class MainWindow(QMainWindow):
             CAMERA_BUFFERSIZE,
             CAMERA_FRAMERATE,
         ).start()
-        thread = Thread(target=self.abc)
-        thread.start()
-        print("started")
         self.stepperController = None
         # Stepper Controller
         try:
-            thread = StepperController(STEPPER_COM_PORT, STEPPER_BAUDRATE)
-            thread.start()
+            self.stepperController = StepperController(
+                STEPPER_COM_PORT, STEPPER_BAUDRATE
+            )
+            self.stepperController.connect()
         except Exception:
             self.logTextbox.append(
                 "ERROR: No Arduino found on " + STEPPER_COM_PORT + "."
             )
             self.stepperController = None
 
-
+        self.moveWorker = MoveWorker(self.stepperController)
+        self.moveWorker.start()
 
         self.tableCordnerCoords = [(TABLE_CORNER_TOP_LEFT_X, TABLE_CORNER_TOP_LEFT_Y),
                                    (TABLE_CORNER_TOP_RIGHT_X,
@@ -359,8 +403,15 @@ class MainWindow(QMainWindow):
         self.wasPuckGoingToRobot = False
         self.isPuckGoingToRobot = False
         self.predictionMade = False
+
         self.predictionLine = Line((0, 0), (0, 0))
-        self.predictedPoint = (0,0)
+        self.predictedPoint = (0, 0)
+        self.collisionPoint = (0, 0)
+        self.reflectionLine = Line((0, 0), (0, 0))
+        self.puckCollides = False
+        self.savedPoint = (0, 0)
+
+        self.wentBackToGoal = False
 
         self.testTime = datetime.now()
 
@@ -371,7 +422,6 @@ class MainWindow(QMainWindow):
         # Let the window close.
         event.accept()
         self.exitApp()
-
 
     def exitApp(self):
         self.timer.stop()
@@ -440,7 +490,14 @@ class MainWindow(QMainWindow):
             self.sendMoveValues(int(moveX), int(moveY))
 
     def sendMoveValues(self, x, y):
-        self.stepperController.enqueue_position(x,y)
+        # Do scaling.
+        offset = (x - (TABLE_MAX_X / 2)) / 9
+        x += offset
+        y -= 50
+
+        if self.botActivated:
+            # print(f"Sending {self.positionsSent} (X:{int(x)}, Y:{int(y)})")
+            self.moveWorker.set_values(x, y)
 
     def calibrate(self):
         # Add your calibration code here
@@ -482,15 +539,12 @@ class MainWindow(QMainWindow):
                 + STEPPER_COM_PORT
                 + "."
             )
-    def abc(self):
-        while True:
-            self.updateImages()
+
     def updateImages(self):
         # lastTime = self.testTime
         # self.testTime = datetime.now()
         # diffMs = (self.testTime - lastTime).microseconds / 1000
         # print(f"Diff: {diffMs}")
-
 
         if self.camera.new_frame:
             self.currentFrameTimestamp = datetime.now()
@@ -514,14 +568,20 @@ class MainWindow(QMainWindow):
                 )
 
                 # Calculate transformation matrix.
-                matrix = cv2.getPerspectiveTransform(selectedCorners, self.originalCorners)
+                matrix = cv2.getPerspectiveTransform(
+                    selectedCorners, self.originalCorners
+                )
                 # Warp the image.
-                frame = cv2.warpPerspective(frame, matrix, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH))
+                frame = cv2.warpPerspective(
+                    frame, matrix, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH)
+                )
 
             if not self.cornersApplied:
                 # Draw the corners if they are set.
                 for corner in self.tableCordnerCoords:
-                    cv2.circle(frame, (corner[0], corner[1]), 5, (255, 255, 255), 2)
+                    cv2.circle(
+                        frame, (corner[0], corner[1]), 5, (255, 255, 255), 2)
+
             self.frameCounter = self.frameCounter + 1
             lowerBoundary = np.array(
                 [
@@ -537,7 +597,6 @@ class MainWindow(QMainWindow):
                     self.upperValueSlider.value(),
                 ]
             )
-
             filteredFrame = filterFrameHSV(frame, lowerBoundary, upperBoundary)
 
             # Detect the puck and update UI values.
@@ -557,37 +616,85 @@ class MainWindow(QMainWindow):
 
             # Check if the puck is going in the direction of the robot.
             if self.isPuckGoingToRobot and self.wasPuckGoingToRobot:
-                self.predictionLine = Line(
-                    self.lastPosition, self.currentPosition)
-                try:
-                    if self.predictionLine.get_m() is not None and self.predictionMade == False:
-                        self.positionsSent += 1
-                        print(f"Making prediction {self.positionsSent}")
-                        self.predictionMade = True
-                        self.predictedPoint = (int(self.predictionLine.get_x(100)), 100)
-                        if 20 < self.predictedPoint[0] < CAMERA_FRAME_HEIGHT - 20:
-                            moveX, moveY = self.mapCoordinates(
-                                self.predictedPoint[0],
-                                self.predictedPoint[1],
-                                CAMERA_FRAME_HEIGHT,
-                                CAMERA_FRAME_ROBOT_MAX_Y,
-                                TABLE_MAX_X,
-                                TABLE_MAX_Y,
-                            )
-                            #moveY *= 2
-                            moveX = TABLE_MAX_X - moveX
-                            self.logTextbox.append(
-                                f"Move To: X={moveX:.0f}, Y={moveY:.0f}")
-                            if self.botActivated:
-                                self.positionsSent += 1
-                                print(
-                                    f"Sending {self.positionsSent} (X:{int(moveX)}, Y:{int(moveY)})")
-                                self.sendMoveValues(int(moveX), int(moveY))
+                if not self.predictionMade:
+                    print(f"Predicting {self.positionsSent}")
+                    self.puckCollides = False
+                    self.predictionLine = Line(
+                        self.lastPosition, self.currentPosition)
+                    self.savedPoint = self.currentPosition
+                    try:
+                        if self.predictionLine.get_m() is not None:
 
-                except:
-                    pass
+                            # Check if we have a collision with the wall on either side.
+                            if self.predictionLine.get_angle() >= 0:  # left edge
+                                self.collisionPoint = (
+                                    0, self.predictionLine.get_y(0))
+                                self.puckCollides = True
+                            else:  # right edge
+                                self.collisionPoint = (
+                                    CAMERA_FRAME_HEIGHT, self.predictionLine.get_y(CAMERA_FRAME_HEIGHT))
+                                self.puckCollides = True
+
+                            # If puck collides with wall calculate the reflection point.
+                            if self.puckCollides and self.collisionPoint[1] > 0:
+                                self.reflectionLine = Line(
+                                    self.collisionPoint, None, (-1 * self.predictionLine.get_m()))
+                                self.predictedPoint = (self.reflectionLine.get_x(
+                                    DEFENSIVE_LINE), DEFENSIVE_LINE)
+                            else:
+                                self.predictedPoint = (
+                                    self.predictionLine.get_x(DEFENSIVE_LINE), DEFENSIVE_LINE)
+
+                            # print("==============================")
+                            # print(f"PredLine m={self.predictionLine.get_m()}")
+                            # print(f"ReflLine m={self.reflectionLine.get_m()}")
+                            # print(f"Last: {self.lastPosition}")
+                            # print(f"Curr: {self.currentPosition}")
+                            # print(f"Coll: {self.collisionPoint}")
+                            # print(f"Predicted: {self.predictedPoint}")
+
+                            # self.reflectionLine = Line(
+                            #     self.collisionPoint, None, (1 / self.predictionLine.get_m()))
+                            # self.reflectionPoint = (
+                            #     int(CAMERA_FRAME_HEIGHT - self.reflectionLine.get_x(0)), int(0))
+
+                            self.positionsSent += 1
+                            self.predictionMade = True
+                            self.wentBackToGoal = False
+
+                            if 20 < self.predictedPoint[0] < CAMERA_FRAME_HEIGHT - 20:
+                                moveX, moveY = self.mapCoordinates(
+                                    self.predictedPoint[0],
+                                    self.predictedPoint[1],
+                                    CAMERA_FRAME_HEIGHT,
+                                    CAMERA_FRAME_ROBOT_MAX_Y,
+                                    TABLE_MAX_X,
+                                    TABLE_MAX_Y,
+                                )
+                                # moveY *= 2
+                                moveX = TABLE_MAX_X - moveX
+                                # moveY += 200
+
+                                self.logTextbox.append(
+                                    f"Move To: X={moveX:.0f}, Y={moveY:.0f}")
+
+                                self.positionsSent += 1
+                                self.sendMoveValues(int(moveX), int(moveY))
+                    except:
+                        pass
             else:
                 self.predictionMade = False
+                if self.wentBackToGoal == False:
+                    self.wentBackToGoal = True
+                    moveX, moveY = self.mapCoordinates(
+                        (CAMERA_FRAME_HEIGHT / 2),
+                        DEFENSIVE_LINE,
+                        CAMERA_FRAME_HEIGHT,
+                        CAMERA_FRAME_ROBOT_MAX_Y,
+                        TABLE_MAX_X,
+                        TABLE_MAX_Y,
+                    )
+                    self.sendMoveValues(int(moveX), int(moveY))
 
             self.wasPuckGoingToRobot = self.isPuckGoingToRobot
             self.lastPosition = self.currentPosition
@@ -595,15 +702,62 @@ class MainWindow(QMainWindow):
             # Draw the current prediction if we have one.
             if self.predictionMade and self.predictionLine.get_m() is not None:
                 if self.showDebugImages:
-                    cv2.circle(frame, self.predictedPoint, 5, (255, 0, 255), -1)
-                    cv2.line(
-                        frame,
-                        (int(self.currentPosition[0]), int(self.currentPosition[1])),
-                        self.predictedPoint,
-                        (255, 0, 0),
-                        thickness=1,
-                        lineType=4,
-                    )
+                    # Draw predicted point.
+                    cv2.circle(frame, (int(self.predictedPoint[0]), int(self.predictedPoint[1])),
+                               5, (255, 0, 255), -1)
+
+                    cv2.circle(frame, (int(self.savedPoint[0]),
+                                       int(self.savedPoint[1])), 5, (0, 0, 0), -1)
+
+                    # Draw prediction line.
+                    if self.puckCollides == False:
+                        cv2.line(
+                            frame,
+                            (int(self.currentPosition[0]),
+                             int(self.currentPosition[1])),
+                            (int(self.predictedPoint[0]), int(
+                                self.predictedPoint[1])),
+                            (255, 0, 0),
+                            thickness=2,
+                            lineType=4,
+                        )
+                        cv2.line(
+                            frame,
+                            (int(self.savedPoint[0]),
+                             int(self.savedPoint[1])),
+                            (int(self.predictedPoint[0]), int(self.predictedPoint[1])),
+                            (255, 0, 0),
+                            thickness=2,
+                            lineType=4,
+                        )
+
+                    if self.puckCollides:
+                        # Draw collision point.
+                        cv2.circle(frame, (int(self.collisionPoint[0]), int(self.collisionPoint[1])),
+                                   10, (255, 255, 255), -1)
+
+                        # Draw prediction line for collision.
+                        cv2.line(frame,
+                                 (int(self.savedPoint[0]), int(
+                                     self.savedPoint[1])),
+                                 (int(self.collisionPoint[0]), int(self.collisionPoint[1])),
+                                 (255, 0, 0), thickness=2, lineType=4)
+
+                        # Draw reflection line after collision.
+                        cv2.line(frame,
+                                 (int(self.collisionPoint[0]), int(self.collisionPoint[1])),
+                                 (int(self.predictedPoint[0]), int(self.predictedPoint[1])),
+                                 (255, 255, 0), thickness=2, lineType=4)
+
+                    # cv2.circle(frame, self.collisionPoint,
+                    #            5, (0, 100, 255), -1)
+                    # cv2.circle(frame, self.reflectionPoint,
+                    #            5, (100, 0, 255), -1)
+                    # cv2.line(frame, (int(self.currentPosition[0]),
+                    #                  int(self.currentPosition[1])), self.collisionPoint,
+                    #          (255, 255, 255), thickness=3, lineType=4)
+                    # cv2.line(frame, self.collisionPoint, self.reflectionPoint,
+                    #          (255, 255, 255), thickness=3, lineType=4)
 
             # self.puckPositions.append((x, y))
 
@@ -786,17 +940,13 @@ class MainWindow(QMainWindow):
         image.setPixmap(pixmap)
 
 
-
-
-
-
 if __name__ == "__main__":
     cv2.ocl.setUseOpenCL(True)
     app = QApplication(sys.argv)
     app.setStyleSheet(qdarkstyle.load_stylesheet())
-    #splash = QSplashScreen(QPixmap("splash.png"))
-    #splash.show()
+    splash = QSplashScreen(QPixmap("splash.png"))
+    splash.show()
     main_window = MainWindow()
-    #splash.close()
+    splash.close()
     main_window.show()
     sys.exit(app.exec_())
