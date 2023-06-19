@@ -34,8 +34,8 @@ void calibrate_y() {
 }
 void calibrate(){
   for(int i = 0; i<=3; i++) {
-  calibrate_x();
   calibrate_y();
+  calibrate_x();
 }
   Serial.println("ready");
 }

@@ -19,6 +19,8 @@ void setup() {
   Serial.begin(115200);
   calibrate();
 }
+
+
 void enable_steppers() {
   if (!st_enabled) {
     stepperx.enableOutputs();
@@ -55,10 +57,10 @@ void loop() {
     } else if (strcmp(command.c_str(), "POSITION") == 0) {
       Serial.println(String(stepperx.currentPosition()) + "," + String(steppery.currentPosition()));
     } else if (strcmp(command.c_str(), "CALIBRATE") == 0) {
-      movement_x = 0;
       movement_y = 0;
-      calibrate_x();
       calibrate_y();
+      movement_x = 0;
+      calibrate_x();
       Serial.println("OK");
     } else if (strcmp(command.c_str(), "STATUS") == 0) {
       if (stepperx.isRunning() || steppery.isRunning())
@@ -71,6 +73,8 @@ void loop() {
       movement_y = command.substring(delimiterIndex + 1).toInt();  //new y pos
       if(movement_x >=0 && movement_x<=MAX_X && movement_y >=0 && movement_y <= MAX_Y){
       SetStepperSettings();
+      movement_x = map(movement_x,0,MAX_X,20,MAX_X-20);//avoid crash
+      movement_y = map(movement_y,0,MAX_Y,20,MAX_Y-20);
       stepperx.moveTo(movement_x);
       steppery.moveTo(movement_y);
       stepperx.runToPosition();
