@@ -28,36 +28,9 @@ from PyQt5.QtWidgets import (
 
 from Constants import *
 from Camera import Camera
-from StepperController import StepperController
+from StepperController import *
 from Processing.ProcessFrame import filterFrameHSV, detectPuck, markInFrame, markRobotRectangle
 from Processing.Line import Line
-
-
-class MoveType(Enum):
-    NORMAL = 1
-    OFFSET = 2
-    CALIBRATE = 3
-
-
-class MoveWorker(QThread):
-    def __init__(self, stepperController, parent=None):
-        super().__init__(parent)
-        self.queue = Queue()
-        self.stepperController = stepperController
-
-    def run(self):
-        while True:
-            type, x, y = self.queue.get()  # Blocks until there are values in the queue
-            if self.stepperController is not None:
-                if type == MoveType.NORMAL:
-                    self.stepperController.move_to_position(int(x), int(y))
-                elif type == MoveType.OFFSET:
-                    self.stepperController.set_offset(0, int(y))
-                elif type == MoveType.CALIBRATE:
-                    self.stepperController.calibrate()
-
-    def set_values(self, type, x, y):
-        self.queue.put((type, x, y))
 
 
 class MainWindow(QMainWindow):

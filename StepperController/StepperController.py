@@ -3,6 +3,9 @@ import time
 from queue import Queue
 from threading import Thread
 
+from PyQt5.QtCore import QThread
+from enum import Enum
+
 
 class StepperController():
     def __init__(self, port, baudrate):
@@ -35,10 +38,10 @@ class StepperController():
             y_offset = "-"
         y_offset += str(y) + '\n'
         if y != 0:
-            self.connection.write(b'OFFSETY'+y_offset.encode())
+            self.connection.write(b'OFFSETY' + y_offset.encode())
             self.connection.readline()
         if x != 0:
-            self.connection.write(b'OFFSETX'+x_offset.encode())
+            self.connection.write(b'OFFSETX' + x_offset.encode())
             self.connection.readline()
 
     def calibrate(self):
@@ -48,3 +51,30 @@ class StepperController():
 
     def disconnect(self):
         self.connection.close()
+
+
+class MoveType(Enum):
+    NORMAL = 1
+    OFFSET = 2
+    CALIBRATE = 3
+
+
+class MoveWorker(QThread):
+    def __init__(self, stepperController, parent=None):
+        super().__init__(parent)
+        self.queue = Queue()
+        self.stepperController = stepperController
+
+    def run(self):
+        while True:
+            type, x, y = self.queue.get()  # Blocks until there are values in the queue
+            if self.stepperController is not None:
+                if type == MoveType.NORMAL:
+                    self.stepperController.move_to_position(int(x), int(y))
+                elif type == MoveType.OFFSET:
+                    self.stepperController.set_offset(int(x), int(y))
+                elif type == MoveType.CALIBRATE:
+                    self.stepperController.calibrate()
+
+    def set_values(self, type, x, y):
+        self.queue.put((type, x, y))
