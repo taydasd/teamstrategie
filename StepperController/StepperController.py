@@ -7,7 +7,7 @@ from PyQt5.QtCore import QThread
 from enum import Enum
 
 
-class StepperController():
+class StepperController:
     def __init__(self, port, baudrate):
         super().__init__()
         self.port = port
