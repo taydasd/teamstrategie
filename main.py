@@ -2,14 +2,9 @@ import sys
 import cv2
 import math
 import numpy as np
-import qdarkstyle
-import time
 from datetime import datetime
 from collections import deque
-from queue import Queue
-from enum import Enum
-
-from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal, QMutex, QMutexLocker, QFile, QIODevice, QTextStream
+from PyQt5.QtCore import Qt, QTimer, QFile, QIODevice, QTextStream
 from PyQt5.QtGui import QImage, QPixmap, QIcon, QFont
 from PyQt5.QtWidgets import (
     QApplication,
@@ -22,7 +17,6 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QWidget,
-    QSizePolicy,
     QSlider,
 )
 
@@ -38,14 +32,11 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Rocky Hockey 2023")
         self.setWindowIcon(QIcon('RockyHockey2023Logo.png'))
-
         self.setupUI()
-
         # Create a timer to continuously update and process the camera image.
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update)
         self.timer.start(1)
-
         # Camera used for image.
         self.camera = Camera(
             CAMERA_INDEX,
@@ -55,7 +46,6 @@ class MainWindow(QMainWindow):
             CAMERA_BUFFERSIZE,
             CAMERA_FRAMERATE,
         ).start()
-
         self.stepperController = None
         try:
             self.stepperController = StepperController(
@@ -67,11 +57,9 @@ class MainWindow(QMainWindow):
                 "ERROR: No Arduino found on " + STEPPER_COM_PORT + "."
             )
             self.stepperController = None
-
         # Thread for communication with the arduino so the UI does not hang.
         self.moveWorker = MoveWorker(self.stepperController)
         self.moveWorker.start()
-
         # Coordinates to crop the camera image to fit the table.
         self.croppedTableCoords = [(TABLE_CORNER_TOP_LEFT_X, TABLE_CORNER_TOP_LEFT_Y),
                                    (TABLE_CORNER_TOP_RIGHT_X,
@@ -79,10 +67,8 @@ class MainWindow(QMainWindow):
                                    (TABLE_CORNER_BOTTOM_RIGHT_X,
                                     TABLE_CORNER_BOTTOM_RIGHT_Y),
                                    (TABLE_CORNER_BOTTOM_LEFT_X, TABLE_CORNER_BOTTOM_LEFT_Y)]
-
         # Is the image already cropped?
         self.cornersApplied = True
-
         # Original corner coordinates when cropping is reset.
         self.originalCorners = np.float32(
             [
@@ -92,9 +78,7 @@ class MainWindow(QMainWindow):
                 [0, CAMERA_FRAME_WIDTH - 1],
             ]
         )
-
         self.speedThreshold = SPEED_THRESHOLD
-
         self.upperBorder = [(0, 0), (CAMERA_FRAME_WIDTH, 0)]
         self.lowerBorder = [
             (0, CAMERA_FRAME_HEIGHT),
@@ -105,46 +89,35 @@ class MainWindow(QMainWindow):
             (CAMERA_FRAME_WIDTH, 0),
             (CAMERA_FRAME_WIDTH, CAMERA_FRAME_HEIGHT),
         ]
-
         self.lastPosition = (0, 0)
         self.currentPosition = (0, 0)
         self.frameCounter = 0
         self.moveForward = True
-
         self.lastRobotPosition = (0, 0)
         self.currentRobotPosition = (0, 0)
         self.robotSpeed = 0
         self.puckSpeed = 0
         self.robotIsStopped = True
         self.robotWasStopped = True
-
         self.puckPositions = deque(maxlen=MAX_PUCK_POSITION_BUFFER)
         self.positionsSent = 0
-
         self.botActivated = False
-
         self.showDebugImages = True
-
         self.wasPuckGoingToRobot = False
         self.isPuckGoingToRobot = False
         self.predictionMade = False
         self.puckIsGoingLeft = False
         self.puckWasGoingLeft = False
-
         self.predictionLine = Line((0, 0), (0, 0))
         self.predictedPoint = (0, 0)
         self.collisionPoint = (0, 0)
         self.reflectionLine = Line((0, 0), (0, 0))
         self.puckCollides = False
         self.savedPoint = (0, 0)
-
         self.lastMovePosition = (0, 0)
-
         self.wentBackToGoal = False
         self.attacked = False
-
         self.testTime = datetime.now()
-
         self.currentFrameTimestamp = datetime.now()
         self.lastFrameTimestamp = datetime.now()
 
@@ -687,10 +660,6 @@ class MainWindow(QMainWindow):
                 self.upperSaturationRobotSlider.value(),
                 self.upperValueRobotSlider.value(),
             ])
-
-            # TODO: It seems we do not need to filter the frame to get the positions.
-            filteredFrame = filterFrameHSV(
-                frame, lowerBoundary, upperBoundary, robotLowerBoundary, robotUpperBoundary)
 
             # Detect the puck and update UI values.
             (x, y), radius = detectPuck(
