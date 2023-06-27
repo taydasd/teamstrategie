@@ -19,7 +19,6 @@ from PyQt5.QtWidgets import (
     QWidget,
     QSlider,
 )
-
 from Constants import *
 from Camera import Camera
 from StepperController import *

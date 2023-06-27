@@ -1,8 +1,6 @@
 import serial
 import time
 from queue import Queue
-from threading import Thread
-
 from PyQt5.QtCore import QThread
 from enum import Enum
 
