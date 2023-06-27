@@ -15,18 +15,13 @@ class Camera:
             self.stream = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
         else:
             self.stream = cv2.VideoCapture(camera_index)
-        #self.stream.set(cv2.CAP_PROP_SETTINGS, 1)
-        #self.stream.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('X', 'V', 'I', 'D'))
-        #self.stream.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('m', 'j', 'p', 'g'))
         self.stream.set(cv2.CAP_PROP_HW_ACCELERATION, cv2.VIDEO_ACCELERATION_ANY)
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
         self.stream.set(cv2.CAP_PROP_FPS, fps)
         self.stream.set(cv2.CAP_PROP_FOCUS, focus)
         self.stream.set(cv2.CAP_PROP_BUFFERSIZE, buffer_size)
-
         (self.grabbed, self.frame) = self.stream.read()
-
         self.stopped = False
         self.new_frame = False
 
