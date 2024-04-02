@@ -1,70 +1,45 @@
-/*    */ package rockyhockey.gui.specialbuttons;
-/*    */ 
-/*    */ import java.io.IOException;
-/*    */ import javax.imageio.ImageIO;
-/*    */ import javax.swing.ImageIcon;
-/*    */ import javax.swing.JButton;
-/*    */ import rockyhockey.gui.mvc.ResourceLoader;
-/*    */ 
-/*    */ 
-/*    */ 
-/*    */ 
-/*    */ 
-/*    */ 
-/*    */ 
-/*    */ 
-/*    */ 
-/*    */ public class MuteButton
-/*    */   extends JButton
-/*    */ {
-/*    */   private static final long serialVersionUID = 1L;
-/*    */   private static ImageIcon mutedIcon;
-/*    */   private static ImageIcon unmutedIcon;
-/*    */   private boolean iconNotNull;
-/*    */   private boolean defaultIcon;
-/*    */   
-/*    */   static {
-/*    */     try {
-/* 28 */       mutedIcon = new ImageIcon(ImageIO.read(ResourceLoader.load("/img/mute.png")));
-/* 29 */       unmutedIcon = new ImageIcon(ImageIO.read(ResourceLoader.load("/img/sound.png")));
-/*    */     }
-/* 31 */     catch (IOException e) {
-/* 32 */       e.printStackTrace();
-/*    */     } 
-/*    */   }
-/*    */ 
-/*    */ 
-/*    */ 
-/*    */ 
-/*    */ 
-/*    */ 
-/*    */   
-/*    */   public MuteButton() {
-/* 43 */     this.defaultIcon = true;
-/* 44 */     setOpaque(false);
-/* 45 */     setContentAreaFilled(false);
-/* 46 */     setBorderPainted(false);
-/* 47 */     setFocusPainted(false);
-/* 48 */     this.iconNotNull = (mutedIcon != null && unmutedIcon != null);
-/* 49 */     if (this.iconNotNull) {
-/* 50 */       setIcon(unmutedIcon);
-/*    */     }
-/*    */   }
-/*    */ 
-/*    */ 
-/*    */ 
-/*    */   
-/*    */   public void toggleIcon() {
-/* 58 */     if (this.iconNotNull) {
-/* 59 */       this.defaultIcon ^= 0x1;
-/* 60 */       setIcon(this.defaultIcon ? unmutedIcon : mutedIcon);
-/* 61 */       repaint();
-/*    */     } 
-/*    */   }
-/*    */ }
+package rockyhockey.gui.specialbuttons;
 
+import java.io.IOException;
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import rockyhockey.gui.mvc.ResourceLoader;
 
-/* Location:              /home/felix/Downloads/JavaGUI (Kopie).jar!/rockyhockey/gui/specialbuttons/MuteButton.class
- * Java compiler version: 8 (52.0)
- * JD-Core Version:       1.1.3
- */
+public class MuteButton
+        extends JButton {
+    private static final long serialVersionUID = 1L;
+    private static ImageIcon mutedIcon;
+    private static ImageIcon unmutedIcon;
+    private boolean iconNotNull;
+    private boolean defaultIcon;
+
+    static {
+        try {
+            mutedIcon = new ImageIcon(ImageIO.read(ResourceLoader.load("/img/mute.png")));
+            unmutedIcon = new ImageIcon(ImageIO.read(ResourceLoader.load("/img/sound.png")));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public MuteButton() {
+        this.defaultIcon = true;
+        setOpaque(false);
+        setContentAreaFilled(false);
+        setBorderPainted(false);
+        setFocusPainted(false);
+        this.iconNotNull = (mutedIcon != null && unmutedIcon != null);
+        if (this.iconNotNull) {
+            setIcon(unmutedIcon);
+        }
+    }
+
+    public void toggleIcon() {
+        if (this.iconNotNull) {
+            this.defaultIcon ^= 0x1;
+            setIcon(this.defaultIcon ? unmutedIcon : mutedIcon);
+            repaint();
+        }
+    }
+}
