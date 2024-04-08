@@ -558,70 +558,10 @@ class MainWindow(QMainWindow):
 
     def update(self):
         if self.camera.new_frame:
-            self.currentFrameTimestamp = datetime.now()
-            frame = self.camera.get_current_frame()
-            if self.cornersApplied:
-                # If the corners are set then fit the image.
-                # Corners have to be inputted clockwise.
-                selectedCorners = np.float32(
-                    [
-                        [self.croppedTableCoords[0][0],
-                         self.croppedTableCoords[0][1]],
-                        [self.croppedTableCoords[1][0],
-                         self.croppedTableCoords[1][1]],
-                        [self.croppedTableCoords[2][0],
-                         self.croppedTableCoords[2][1]],
-                        [self.croppedTableCoords[3][0],
-                         self.croppedTableCoords[3][1]],
-                    ]
-                )
+            frame = self.initializeCamera()
 
-                # Calculate transformation matrix.
-                matrix = cv2.getPerspectiveTransform(
-                    selectedCorners, self.originalCorners
-                )
-                # Warp the image.
-                frame = cv2.warpPerspective(
-                    frame, matrix, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH)
-                )
-            if not self.cornersApplied:
-                # Draw the corners if they are set.
-                for corner in self.croppedTableCoords:
-                    cv2.circle(
-                        frame, (corner[0], corner[1]), 5, (255, 255, 255), 2)
+            x, y, radius, robotRadius = self.defineBoundaries(frame)
 
-            self.frameCounter = self.frameCounter + 1
-            lowerBoundary = np.array(
-                [
-                    self.lowerHueSlider.value(),
-                    self.lowerSaturationSlider.value(),
-                    self.lowerValueSlider.value(),
-                ]
-            )
-            upperBoundary = np.array(
-                [
-                    self.upperHueSlider.value(),
-                    self.upperSaturationSlider.value(),
-                    self.upperValueSlider.value(),
-                ]
-            )
-            # TODO: Make robot detection better.
-            robotLowerBoundary = np.array([
-                self.lowerHueRobotSlider.value(),
-                self.lowerSaturationRobotSlider.value(),
-                self.lowerValueRobotSlider.value(),
-            ])
-            robotUpperBoundary = np.array([
-                self.upperHueRobotSlider.value(),
-                self.upperSaturationRobotSlider.value(),
-                self.upperValueRobotSlider.value(),
-            ])
-            # Detect the puck and update UI values.
-            (x, y), radius = detectPuck(
-                frame, lowerBoundary, upperBoundary)
-            (robotX, robotY), robotRadius = detectPuck(
-                frame, robotLowerBoundary, robotUpperBoundary
-            )
             # Robot detection is not that stable.
             # If we find something with a very small or very large radius then set the position invalid.
             if robotRadius < 10 or robotRadius > 50:
@@ -629,13 +569,7 @@ class MainWindow(QMainWindow):
                 robotY = -1
                 robotRadius = -1
                 self.robotSpeed = -1
-            # print(f"Robot: {robotX:.0f},{robotY:.0f}")
-            frame = markInFrame(frame, x, y, radius, FRAME_PUCK_OUTLINE_COLOR)
-            # Mark robot
-            if robotX != -1 and robotY != -1 and robotRadius != -1:
-                frame = markInFrame(frame, robotX, robotY,
-                                    robotRadius, FRAME_ROBOT_OUTLINE_COLOR)
-            frame = markRobotRectangle(frame)
+
             self.currentPosition = (x, y)
             self.currentRobotPosition = (robotX, robotY)
             self.puckSpeed = math.sqrt((self.currentPosition[0] - self.lastPosition[0]) ** 2 + (
@@ -643,15 +577,9 @@ class MainWindow(QMainWindow):
             self.robotSpeed = math.sqrt((self.currentRobotPosition[0] - self.lastRobotPosition[0]) ** 2 + (
                     self.currentRobotPosition[1] - self.lastRobotPosition[1]) ** 2)
             self.robotIsStopped = self.robotSpeed <= 1 or self.robotSpeed == -1
-            self.puckXLabel.setText(str(f"X: {x:.0f}"))
-            self.puckYLabel.setText(str(f"Y: {y:.0f}"))
-            self.puckRadiusLabel.setText(str(f"Radius: {radius:.0f}"))
-            self.puckSpeedLabel.setText(str(f"Speed: {self.puckSpeed:.1f}"))
 
-            self.robotXLabel.setText(str(f"X: {robotX:.0f}"))
-            self.robotYLabel.setText(str(f"Y: {robotY:.0f}"))
-            self.robotRadiusLabel.setText(str(f"Radius: {robotRadius:.0f}"))
-            self.robotSpeedLabel.setText(str(f"Speed: {self.robotSpeed:.1f}"))
+            frame = self.updatePreCalculationUi(frame, x, y, radius, robotX, robotY, robotRadius)
+
             self.isPuckGoingToRobot = self.currentPosition[1] < self.lastPosition[1] and (
                     self.lastPosition[1] - self.currentPosition[1]) > 1
             self.puckIsGoingLeft = self.currentPosition[0] < self.lastPosition[0] and (
@@ -728,70 +656,160 @@ class MainWindow(QMainWindow):
             self.lastRobotPosition = self.currentRobotPosition
             self.robotWasStopped = self.robotIsStopped
 
-            # Draw the current prediction if we have one.
-            if self.predictionMade and self.predictionLine.get_m() is not None:
-                if self.showDebugImages:
-                    # Draw predicted point.
-                    cv2.circle(frame, (int(self.predictedPoint[0]), int(self.predictedPoint[1])),
-                               5, (255, 0, 255), -1)
-
-                    cv2.circle(frame, (int(self.savedPoint[0]),
-                                       int(self.savedPoint[1])), 5, (0, 0, 0), -1)
-
-                    # Draw prediction line.
-                    if not self.puckCollides:
-                        cv2.line(
-                            frame,
-                            (int(self.currentPosition[0]),
-                             int(self.currentPosition[1])),
-                            (int(self.predictedPoint[0]), int(
-                                self.predictedPoint[1])),
-                            (255, 0, 0),
-                            thickness=2,
-                            lineType=4,
-                        )
-                        cv2.line(
-                            frame,
-                            (int(self.savedPoint[0]),
-                             int(self.savedPoint[1])),
-                            (int(self.predictedPoint[0]), int(
-                                self.predictedPoint[1])),
-                            (255, 0, 0),
-                            thickness=2,
-                            lineType=4,
-                        )
-
-                    if self.puckCollides:
-                        # Draw collision point.
-                        cv2.circle(frame, (int(self.collisionPoint[0]), int(self.collisionPoint[1])),
-                                   10, (255, 255, 255), -1)
-
-                        # Draw prediction line for collision.
-                        cv2.line(frame,
-                                 (int(self.savedPoint[0]), int(
-                                     self.savedPoint[1])),
-                                 (int(self.collisionPoint[0]), int(
-                                     self.collisionPoint[1])),
-                                 (255, 0, 0), thickness=2, lineType=4)
-
-                        # Draw reflection line after collision.
-                        cv2.line(frame,
-                                 (int(self.collisionPoint[0]), int(
-                                     self.collisionPoint[1])),
-                                 (int(self.predictedPoint[0]), int(
-                                     self.predictedPoint[1])),
-                                 (255, 255, 0), thickness=2, lineType=4)
-
+            frame = self.updatePostCalculationUi(frame)
+    
+    def updatePostCalculationUi(self, frame):
+        # Draw the current prediction if we have one.
+        if self.predictionMade and self.predictionLine.get_m() is not None:
             if self.showDebugImages:
-                self.updateImageFromFrame(self.cameraImageLabel, frame)
+                # Draw predicted point.
+                cv2.circle(frame, (int(self.predictedPoint[0]), int(self.predictedPoint[1])),
+                           5, (255, 0, 255), -1)
+                cv2.circle(frame, (int(self.savedPoint[0]),
+                                   int(self.savedPoint[1])), 5, (0, 0, 0), -1)
+                # Draw prediction line.
+                if not self.puckCollides:
+                    cv2.line(
+                        frame,
+                        (int(self.currentPosition[0]),
+                         int(self.currentPosition[1])),
+                        (int(self.predictedPoint[0]), int(
+                            self.predictedPoint[1])),
+                        (255, 0, 0),
+                        thickness=2,
+                        lineType=4,
+                    )
+                    cv2.line(
+                        frame,
+                        (int(self.savedPoint[0]),
+                         int(self.savedPoint[1])),
+                        (int(self.predictedPoint[0]), int(
+                            self.predictedPoint[1])),
+                        (255, 0, 0),
+                        thickness=2,
+                        lineType=4,
+                    )
+                if self.puckCollides:
+                    # Draw collision point.
+                    cv2.circle(frame, (int(self.collisionPoint[0]), int(self.collisionPoint[1])),
+                               10, (255, 255, 255), -1)
+                    # Draw prediction line for collision.
+                    cv2.line(frame,
+                             (int(self.savedPoint[0]), int(
+                                 self.savedPoint[1])),
+                             (int(self.collisionPoint[0]), int(
+                                 self.collisionPoint[1])),
+                             (255, 0, 0), thickness=2, lineType=4)
+                    # Draw reflection line after collision.
+                    cv2.line(frame,
+                             (int(self.collisionPoint[0]), int(
+                                 self.collisionPoint[1])),
+                             (int(self.predictedPoint[0]), int(
+                                 self.predictedPoint[1])),
+                             (255, 255, 0), thickness=2, lineType=4)
+        if self.showDebugImages:
+            self.updateImageFromFrame(self.cameraImageLabel, frame)
+        # Code for frame time and FPS.
+        frameTimeMs = (self.currentFrameTimestamp -
+                       self.lastFrameTimestamp).microseconds / 1000
+        self.lastFrameTimestamp = self.currentFrameTimestamp
+        fps = 1000 / frameTimeMs
+        self.frameTimeLabel.setText(
+            f"Frame Time: {frameTimeMs:.0f}ms ({fps:.0f} FPS)")
+        
+        return frame
 
-            # Code for frame time and FPS.
-            frameTimeMs = (self.currentFrameTimestamp -
-                           self.lastFrameTimestamp).microseconds / 1000
-            self.lastFrameTimestamp = self.currentFrameTimestamp
-            fps = 1000 / frameTimeMs
-            self.frameTimeLabel.setText(
-                f"Frame Time: {frameTimeMs:.0f}ms ({fps:.0f} FPS)")
+
+
+    def updatePreCalculationUi(self, frame, x, y, radius, robotX, robotY, robotRadius):
+       # print(f"Robot: {robotX:.0f},{robotY:.0f}")
+        frame = markInFrame(frame, x, y, radius, FRAME_PUCK_OUTLINE_COLOR)
+        # Mark robot
+        if robotX != -1 and robotY != -1 and robotRadius != -1:
+            frame = markInFrame(frame, robotX, robotY, robotRadius, FRAME_ROBOT_OUTLINE_COLOR)
+        frame = markRobotRectangle(frame)
+        self.puckXLabel.setText(str(f"X: {x:.0f}"))
+        self.puckYLabel.setText(str(f"Y: {y:.0f}"))
+        self.puckRadiusLabel.setText(str(f"Radius: {radius:.0f}"))
+        self.puckSpeedLabel.setText(str(f"Speed: {self.puckSpeed:.1f}"))
+
+        self.robotXLabel.setText(str(f"X: {robotX:.0f}"))
+        self.robotYLabel.setText(str(f"Y: {robotY:.0f}"))
+        self.robotRadiusLabel.setText(str(f"Radius: {robotRadius:.0f}"))
+        self.robotSpeedLabel.setText(str(f"Speed: {self.robotSpeed:.1f}"))
+
+        return frame
+
+    def defineBoundaries(self, frame):
+        lowerBoundary = np.array(
+                [
+                    self.lowerHueSlider.value(),
+                    self.lowerSaturationSlider.value(),
+                    self.lowerValueSlider.value(),
+                ]
+            )
+        upperBoundary = np.array(
+                [
+                    self.upperHueSlider.value(),
+                    self.upperSaturationSlider.value(),
+                    self.upperValueSlider.value(),
+                ]
+            )
+            # TODO: Make robot detection better.
+        robotLowerBoundary = np.array([
+                self.lowerHueRobotSlider.value(),
+                self.lowerSaturationRobotSlider.value(),
+                self.lowerValueRobotSlider.value(),
+            ])
+        robotUpperBoundary = np.array([
+                self.upperHueRobotSlider.value(),
+                self.upperSaturationRobotSlider.value(),
+                self.upperValueRobotSlider.value(),
+            ])
+            # Detect the puck and update UI values.
+        (x, y), radius = detectPuck(
+                frame, lowerBoundary, upperBoundary)
+        (robotX, robotY), robotRadius = detectPuck(
+                frame, robotLowerBoundary, robotUpperBoundary
+            )
+        
+        return x,y,radius,robotRadius
+
+    def initializeCamera(self):
+        self.currentFrameTimestamp = datetime.now()
+        frame = self.camera.get_current_frame()
+        if self.cornersApplied:
+                # If the corners are set then fit the image.
+                # Corners have to be inputted clockwise.
+            selectedCorners = np.float32(
+                    [
+                        [self.croppedTableCoords[0][0],
+                         self.croppedTableCoords[0][1]],
+                        [self.croppedTableCoords[1][0],
+                         self.croppedTableCoords[1][1]],
+                        [self.croppedTableCoords[2][0],
+                         self.croppedTableCoords[2][1]],
+                        [self.croppedTableCoords[3][0],
+                         self.croppedTableCoords[3][1]],
+                    ]
+                )
+
+                # Calculate transformation matrix.
+            matrix = cv2.getPerspectiveTransform(
+                    selectedCorners, self.originalCorners
+                )
+                # Warp the image.
+            frame = cv2.warpPerspective(
+                    frame, matrix, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH)
+                )
+        if not self.cornersApplied:
+                # Draw the corners if they are set.
+            for corner in self.croppedTableCoords:
+                cv2.circle(
+                        frame, (corner[0], corner[1]), 5, (255, 255, 255), 2)
+
+        self.frameCounter = self.frameCounter + 1
+        return frame
 
     def mapCoordinates(
             self, x, y, maxWidthFrom, maxHeightFrom, maxWidthTo, maxHeightTo
