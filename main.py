@@ -628,7 +628,7 @@ class MainWindow(QMainWindow):
                             self.attacked = False
                             
                             # Check if predicted puck position is valid 
-                            if 50 < self.predictedPoint[0] < CAMERA_FRAME_HEIGHT - 50:
+                            if 50 < self.predictedPoint[0] < (CAMERA_FRAME_HEIGHT - 50):
                                 # Calculate robot movement to the predicted puck position
                                 moveX, moveY = self.mapCoordinates(
                                     self.predictedPoint[0],
