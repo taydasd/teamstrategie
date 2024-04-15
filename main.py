@@ -556,14 +556,15 @@ class MainWindow(QMainWindow):
                 + "."
             )
 
+
     def update(self):
+        # Check if new camera image is available
         if self.camera.new_frame:
             frame = self.initializeCamera()
-
             x, y, radius, robotX, robotY, robotRadius = self.defineBoundaries(frame)
 
-            # Robot detection is not that stable.
-            # If we find something with a very small or very large radius then set the position invalid.
+            # TODO: Robot detection is not that stable
+            # Check detected robot radius (if robot was not recognised correctly set invalid values)
             if robotRadius < 10 or robotRadius > 50:
                 robotX = -1
                 robotY = -1
@@ -572,6 +573,8 @@ class MainWindow(QMainWindow):
 
             self.currentPosition = (x, y)
             self.currentRobotPosition = (robotX, robotY)
+
+            # Calculate robot and puck speed
             self.puckSpeed = math.sqrt((self.currentPosition[0] - self.lastPosition[0]) ** 2 + (
                     self.currentPosition[1] - self.lastPosition[1]) ** 2)
             self.robotSpeed = math.sqrt((self.currentRobotPosition[0] - self.lastRobotPosition[0]) ** 2 + (
@@ -584,16 +587,20 @@ class MainWindow(QMainWindow):
                     self.lastPosition[1] - self.currentPosition[1]) > 1
             self.puckIsGoingLeft = self.currentPosition[0] < self.lastPosition[0] and (
                     self.lastPosition[0] - self.currentPosition[0]) > 5
-            # Check if the puck is going in the direction of the robot.
+            
+            # Check if puck is currently moving to the robot and if it also moved towards the robot during the last update
             if self.isPuckGoingToRobot and self.wasPuckGoingToRobot:
                 if not self.predictionMade:
                     self.puckCollides = False
-                    self.predictionLine = Line(
-                        self.lastPosition, self.currentPosition)
+
+                    # Draw line between current and last puck position
+                    self.predictionLine = Line(self.lastPosition, self.currentPosition)
+
                     self.savedPoint = self.currentPosition
+
                     try:
                         if self.predictionLine.get_m() is not None:
-                            # Check if we have a collision with the wall on either side.
+                            # Check if puck collides with a wall
                             if self.predictionLine.get_angle() >= 0:  # left edge
                                 self.collisionPoint = (
                                     0 + (radius / 2), self.predictionLine.get_y(0 + (radius / 2)))
@@ -603,7 +610,8 @@ class MainWindow(QMainWindow):
                                     CAMERA_FRAME_HEIGHT - (radius / 2),
                                     self.predictionLine.get_y(CAMERA_FRAME_HEIGHT - (radius / 2)))
                                 self.puckCollides = True
-                            # If puck collides with wall calculate the reflection point.
+                            
+                            # If puck collides with wall calculate the reflection point
                             if self.puckCollides and self.collisionPoint[1] > 0:
                                 self.reflectionLine = Line(
                                     self.collisionPoint, None, (-1 * self.predictionLine.get_m() * 2.5))
@@ -614,10 +622,14 @@ class MainWindow(QMainWindow):
                             else:
                                 self.predictedPoint = (
                                     self.predictionLine.get_x(DEFENSIVE_LINE), DEFENSIVE_LINE)
+                            
                             self.predictionMade = True
                             self.wentBackToGoal = False
                             self.attacked = False
+                            
+                            # Check if predicted puck position is valid 
                             if 50 < self.predictedPoint[0] < CAMERA_FRAME_HEIGHT - 50:
+                                # Calculate robot movement to the predicted puck position
                                 moveX, moveY = self.mapCoordinates(
                                     self.predictedPoint[0],
                                     self.predictedPoint[1],
@@ -627,6 +639,8 @@ class MainWindow(QMainWindow):
                                     TABLE_MAX_Y,
                                 )
                                 moveX = TABLE_MAX_X - moveX
+
+                                # If bot is activated move to the calculated position
                                 if self.botActivated:
                                     self.logTextbox.append(
                                         f"Move To: X={moveX:.0f}, Y={moveY:.0f}")
@@ -634,21 +648,28 @@ class MainWindow(QMainWindow):
                                     self.sendMoveValues(moveX, moveY)
                     except:
                         pass
+            
+            # Executed if the puck isn't moving to the robot or didn't move to the robot in the previous update 
             else:
-                if True:
-                    self.predictionMade = False
-                    if not self.wentBackToGoal:
-                        self.wentBackToGoal = True
-                        moveX, moveY = self.mapCoordinates(
-                            (CAMERA_FRAME_HEIGHT / 2),
-                            DEFENSIVE_LINE,
-                            CAMERA_FRAME_HEIGHT,
-                            CAMERA_FRAME_ROBOT_MAX_Y,
-                            TABLE_MAX_X,
-                            TABLE_MAX_Y,
-                        )
-                        if self.botActivated:
-                            self.sendMoveValues(int(moveX), int(moveY))
+                self.predictionMade = False
+
+                # Executed if the robot isn't in the goal
+                if not self.wentBackToGoal:
+                    self.wentBackToGoal = True
+
+                    # Calculate robot movements to goal
+                    moveX, moveY = self.mapCoordinates(
+                        (CAMERA_FRAME_HEIGHT / 2),
+                        DEFENSIVE_LINE,
+                        CAMERA_FRAME_HEIGHT,
+                        CAMERA_FRAME_ROBOT_MAX_Y,
+                        TABLE_MAX_X,
+                        TABLE_MAX_Y,
+                    )
+
+                    # If bot is activated move to the calculated position
+                    if self.botActivated:
+                        self.sendMoveValues(int(moveX), int(moveY))
 
             self.wasPuckGoingToRobot = self.isPuckGoingToRobot
             self.puckWasGoingLeft = self.puckIsGoingLeft
@@ -658,16 +679,17 @@ class MainWindow(QMainWindow):
 
             frame = self.updatePostCalculationUi(frame)
     
+
     def updatePostCalculationUi(self, frame):
-        # Draw the current prediction if we have one.
         if self.predictionMade and self.predictionLine.get_m() is not None:
             if self.showDebugImages:
-                # Draw predicted point.
+                # Draw predicted and current puck position
                 cv2.circle(frame, (int(self.predictedPoint[0]), int(self.predictedPoint[1])),
                            5, (255, 0, 255), -1)
                 cv2.circle(frame, (int(self.savedPoint[0]),
                                    int(self.savedPoint[1])), 5, (0, 0, 0), -1)
-                # Draw prediction line.
+                
+                # Draw predicted line
                 if not self.puckCollides:
                     cv2.line(
                         frame,
@@ -689,44 +711,51 @@ class MainWindow(QMainWindow):
                         thickness=2,
                         lineType=4,
                     )
+
+                # Executed if the puck collides with a wall
                 if self.puckCollides:
-                    # Draw collision point.
+                    # Draw collision point
                     cv2.circle(frame, (int(self.collisionPoint[0]), int(self.collisionPoint[1])),
                                10, (255, 255, 255), -1)
-                    # Draw prediction line for collision.
+
+                    # Draw prediction line before collision
                     cv2.line(frame,
                              (int(self.savedPoint[0]), int(
                                  self.savedPoint[1])),
                              (int(self.collisionPoint[0]), int(
                                  self.collisionPoint[1])),
                              (255, 0, 0), thickness=2, lineType=4)
-                    # Draw reflection line after collision.
+                
+                    # Draw reflection line after collision
                     cv2.line(frame,
                              (int(self.collisionPoint[0]), int(
                                  self.collisionPoint[1])),
                              (int(self.predictedPoint[0]), int(
                                  self.predictedPoint[1])),
                              (255, 255, 0), thickness=2, lineType=4)
+                    
         if self.showDebugImages:
             self.updateImageFromFrame(self.cameraImageLabel, frame)
-        # Code for frame time and FPS.
+        
+        # Calculate frame time and FPS
         frameTimeMs = (self.currentFrameTimestamp -
                        self.lastFrameTimestamp).microseconds / 1000
         self.lastFrameTimestamp = self.currentFrameTimestamp
         fps = 1000 / frameTimeMs
         self.frameTimeLabel.setText(
             f"Frame Time: {frameTimeMs:.0f}ms ({fps:.0f} FPS)")
+        
         return frame
 
 
-
     def updatePreCalculationUi(self, frame, x, y, radius, robotX, robotY, robotRadius):
-       # print(f"Robot: {robotX:.0f},{robotY:.0f}")
+        # Draw outlines of puck, robot and playfield in the camera image
         frame = markInFrame(frame, x, y, radius, FRAME_PUCK_OUTLINE_COLOR)
-        # Mark robot
         if robotX != -1 and robotY != -1 and robotRadius != -1:
             frame = markInFrame(frame, robotX, robotY, robotRadius, FRAME_ROBOT_OUTLINE_COLOR)
         frame = markRobotRectangle(frame)
+
+        # Update puck and robot values in the UI
         self.puckXLabel.setText(str(f"X: {x:.0f}"))
         self.puckYLabel.setText(str(f"Y: {y:.0f}"))
         self.puckRadiusLabel.setText(str(f"Radius: {radius:.0f}"))
@@ -739,22 +768,22 @@ class MainWindow(QMainWindow):
 
         return frame
 
+
     def defineBoundaries(self, frame):
-        lowerBoundary = np.array(
-                [
-                    self.lowerHueSlider.value(),
-                    self.lowerSaturationSlider.value(),
-                    self.lowerValueSlider.value(),
-                ]
-            )
-        upperBoundary = np.array(
-                [
-                    self.upperHueSlider.value(),
-                    self.upperSaturationSlider.value(),
-                    self.upperValueSlider.value(),
-                ]
-            )
-            # TODO: Make robot detection better.
+        # Lower and upper color spectrum for the puck
+        lowerBoundary = np.array([
+                self.lowerHueSlider.value(),
+                self.lowerSaturationSlider.value(),
+                self.lowerValueSlider.value(),
+            ])
+        upperBoundary = np.array([
+                self.upperHueSlider.value(),
+                self.upperSaturationSlider.value(),
+                self.upperValueSlider.value(),
+            ])
+        
+        # TODO: Improve robot detection 
+        # Lower and upper color spectrum for the robot 
         robotLowerBoundary = np.array([
                 self.lowerHueRobotSlider.value(),
                 self.lowerSaturationRobotSlider.value(),
@@ -765,7 +794,8 @@ class MainWindow(QMainWindow):
                 self.upperSaturationRobotSlider.value(),
                 self.upperValueRobotSlider.value(),
             ])
-            # Detect the puck and update UI values.
+        
+        # Detect the puck/robot in the camera image
         (x, y), radius = detectPuck(
                 frame, lowerBoundary, upperBoundary)
         (robotX, robotY), robotRadius = detectPuck(
@@ -774,12 +804,16 @@ class MainWindow(QMainWindow):
         
         return x,y,radius,robotX,robotY,robotRadius
 
+
     def initializeCamera(self):
         self.currentFrameTimestamp = datetime.now()
+
+        # Current camera image
         frame = self.camera.get_current_frame()
+
+        # Check if corners of the camera image have been set
         if self.cornersApplied:
-                # If the corners are set then fit the image.
-                # Corners have to be inputted clockwise.
+            # Input corners clockwise
             selectedCorners = np.float32(
                     [
                         [self.croppedTableCoords[0][0],
@@ -793,22 +827,21 @@ class MainWindow(QMainWindow):
                     ]
                 )
 
-                # Calculate transformation matrix.
-            matrix = cv2.getPerspectiveTransform(
-                    selectedCorners, self.originalCorners
-                )
-                # Warp the image.
-            frame = cv2.warpPerspective(
-                    frame, matrix, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH)
-                )
+            # Calculate transformation matrix (to apply a perspective transformation to the image)
+            matrix = cv2.getPerspectiveTransform(selectedCorners, self.originalCorners)
+            
+            # Apply perspective transformation
+            frame = cv2.warpPerspective(frame, matrix, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH))
+        
+        # Select corners of the camera image if they aren't set
         if not self.cornersApplied:
-                # Draw the corners if they are set.
             for corner in self.croppedTableCoords:
-                cv2.circle(
-                        frame, (corner[0], corner[1]), 5, (255, 255, 255), 2)
+                cv2.circle(frame, (corner[0], corner[1]), 5, (255, 255, 255), 2)
 
         self.frameCounter = self.frameCounter + 1
+
         return frame
+
 
     def mapCoordinates(
             self, x, y, maxWidthFrom, maxHeightFrom, maxWidthTo, maxHeightTo
