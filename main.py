@@ -735,21 +735,19 @@ class MainWindow(QMainWindow):
                         lineType=4,
                     )
 
-            for i in range(len(self.predictedPoints)):
-                # Executed if the puck collides with a wall
-                if self.puckCollides:
+            # Executed if the puck collides with a wall
+            if self.puckCollides:
+                # Draw prediction line before collision
+                cv2.line(frame,
+                         (int(self.savedPoints[0][0]), int(
+                             self.savedPoints[0][1])),
+                         (int(self.collisionPoints[0][0]), int(
+                             self.collisionPoints[0][1])),
+                         (255, 0, 0), thickness=2, lineType=4)
+                for i in range(len(self.predictedPoints)):
                     # Draw collision point
-                    cv2.circle(frame, (int(self.collisionPoints[i][0]), int(self.collisionPoint[i][1])),
+                    cv2.circle(frame, (int(self.collisionPoints[i][0]), int(self.collisionPoints[i][1])),
                                10, (255, 255, 255), -1)
-
-                    # Draw prediction line before collision
-                    cv2.line(frame,
-                             (int(self.savedPoints[i][0]), int(
-                                 self.savedPoints[i][1])),
-                             (int(self.collisionPoints[i][0]), int(
-                                 self.collisionPoints[i][1])),
-                             (255, 0, 0), thickness=2, lineType=4)
-                
                     # Draw reflection line after collision
                     cv2.line(frame,
                              (int(self.collisionPoints[i][0]), int(
