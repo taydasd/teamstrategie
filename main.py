@@ -108,11 +108,14 @@ class MainWindow(QMainWindow):
         self.puckIsGoingLeft = False
         self.puckWasGoingLeft = False
         self.predictionLine = Line((0, 0), (0, 0))
+        self.predictedPoints = []
         self.predictedPoint = (0, 0)
         self.collisionPoint = (0, 0)
+        self.collisionPoints = []
         self.reflectionLine = Line((0, 0), (0, 0))
         self.puckCollides = False
         self.savedPoint = (0, 0)
+        self.savedPoints = []
         self.lastMovePosition = (0, 0)
         self.wentBackToGoal = False
         self.attacked = False
@@ -555,8 +558,6 @@ class MainWindow(QMainWindow):
                 + STEPPER_COM_PORT
                 + "."
             )
-
-
     def update(self):
         # Check if new camera image is available
         if self.camera.new_frame:
@@ -592,6 +593,11 @@ class MainWindow(QMainWindow):
             if self.isPuckGoingToRobot and self.wasPuckGoingToRobot:
                 if not self.predictionMade:
                     self.puckCollides = False
+
+                    #reset saved points
+                    self.savedPoints = []
+                    self.predictedPoints = []
+                    self.collisionPoints = []
 
                     # Draw line between current and last puck position
                     self.predictionLine = Line(self.lastPosition, self.currentPosition)
@@ -634,7 +640,12 @@ class MainWindow(QMainWindow):
 
                                 self.predictionLine = self.reflectionLine
                                 self.savedPoint = self.currentPosition
-                                frame = self.updatePostCalculationUi(frame)
+
+                                #save thigns for ui;
+                                self.savedPoints.append(self.currentPosition)
+                                self.predictedPoints.append(self.predictedPoint)
+                                self.collisionPoints.append(self.collisionPoint)
+                                # frame = self.updatePostCalculationUi(frame)
                                 i += 1
 
                             
@@ -724,26 +735,27 @@ class MainWindow(QMainWindow):
                         lineType=4,
                     )
 
+            for i in range(len(self.predictedPoints)):
                 # Executed if the puck collides with a wall
                 if self.puckCollides:
                     # Draw collision point
-                    cv2.circle(frame, (int(self.collisionPoint[0]), int(self.collisionPoint[1])),
+                    cv2.circle(frame, (int(self.collisionPoints[i][0]), int(self.collisionPoint[i][1])),
                                10, (255, 255, 255), -1)
 
                     # Draw prediction line before collision
                     cv2.line(frame,
-                             (int(self.savedPoint[0]), int(
-                                 self.savedPoint[1])),
-                             (int(self.collisionPoint[0]), int(
-                                 self.collisionPoint[1])),
+                             (int(self.savedPoints[i][0]), int(
+                                 self.savedPoints[i][1])),
+                             (int(self.collisionPoints[i][0]), int(
+                                 self.collisionPoints[i][1])),
                              (255, 0, 0), thickness=2, lineType=4)
                 
                     # Draw reflection line after collision
                     cv2.line(frame,
-                             (int(self.collisionPoint[0]), int(
-                                 self.collisionPoint[1])),
-                             (int(self.predictedPoint[0]), int(
-                                 self.predictedPoint[1])),
+                             (int(self.collisionPoints[i][0]), int(
+                                 self.collisionPoints[i][1])),
+                             (int(self.predictedPoints[i][0]), int(
+                                 self.predictedPoints[i][1])),
                              (255, 255, 0), thickness=2, lineType=4)
                     
         if self.showDebugImages:
