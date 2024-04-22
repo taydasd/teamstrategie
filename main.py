@@ -736,24 +736,25 @@ class MainWindow(QMainWindow):
 
             # Executed if the puck collides with a wall
             if self.puckCollides:
-                # Draw prediction line before collision
-                cv2.line(frame,
-                         (int(self.savedPoints[0][0]), int(
-                             self.savedPoints[0][1])),
-                         (int(self.collisionPoints[0][0]), int(
-                             self.collisionPoints[0][1])),
-                         (255, 0, 0), thickness=2, lineType=4)
-                for i in range(len(self.predictedPoints)):
-                    # Draw collision point
-                    cv2.circle(frame, (int(self.collisionPoints[i][0]), int(self.collisionPoints[i][1])),
-                               10, (255, 255, 255), -1)
-                    # Draw reflection line after collision
+                if len(self.savedPoints) > 0:
+                    # Draw prediction line before collision
                     cv2.line(frame,
-                             (int(self.collisionPoints[i][0]), int(
-                                 self.collisionPoints[i][1])),
-                             (int(self.predictedPoints[i][0]), int(
-                                 self.predictedPoints[i][1])),
-                             (255, 255, 0), thickness=2, lineType=4)
+                             (int(self.savedPoints[0][0]), int(
+                                 self.savedPoints[0][1])),
+                             (int(self.collisionPoints[0][0]), int(
+                                 self.collisionPoints[0][1])),
+                             (255, 0, 0), thickness=2, lineType=4)
+                    for i in range(len(self.predictedPoints)):
+                        # Draw collision point
+                        cv2.circle(frame, (int(self.collisionPoints[i][0]), int(self.collisionPoints[i][1])),
+                                   10, (255, 255, 255), -1)
+                        # Draw reflection line after collision
+                        cv2.line(frame,
+                                 (int(self.collisionPoints[i][0]), int(
+                                     self.collisionPoints[i][1])),
+                                 (int(self.predictedPoints[i][0]), int(
+                                     self.predictedPoints[i][1])),
+                                 (255, 255, 0), thickness=2, lineType=4)
                     
         if self.showDebugImages:
             self.updateImageFromFrame(self.cameraImageLabel, frame)
