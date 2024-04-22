@@ -625,7 +625,7 @@ class MainWindow(QMainWindow):
                                         self.predictionLine.get_x(DEFENSIVE_LINE), DEFENSIVE_LINE)
                                     break
 
-                                if(self.collisionPoint[1] < 0):
+                                if(self.collisionPoint[1] > 0):
                                     break
                                 else:
                                     frame = self.updatePostCalculationUi(frame)
