@@ -637,14 +637,13 @@ class MainWindow(QMainWindow):
                                     self.wentBackToGoal = False
                                     self.attacked = False
                                     break
+                               #save thigns for ui;
+                                self.savedPoints.append(self.savedPoint)
+                                self.predictedPoints.append(self.predictedPoint)
+                                self.collisionPoints.append(self.collisionPoint)
 
                                 self.predictionLine = self.reflectionLine
                                 self.savedPoint = self.currentPosition
-
-                                #save thigns for ui;
-                                self.savedPoints.append(self.currentPosition)
-                                self.predictedPoints.append(self.predictedPoint)
-                                self.collisionPoints.append(self.collisionPoint)
                                 # frame = self.updatePostCalculationUi(frame)
                                 i += 1
 
