@@ -617,10 +617,8 @@ class MainWindow(QMainWindow):
                                     self.collisionPoint, None, (-1 * self.predictionLine.get_m() * 2.5))
                                 print(
                                     f"Reflection line m={self.reflectionLine.get_m()}")
-                                # self.predictedPoint = (self.reflectionLine.get_x(
-                                #     DEFENSIVE_LINE), DEFENSIVE_LINE)
                                 self.predictedPoint = (self.reflectionLine.get_x(
-                                    DEFENSIVE_LINE + 100), DEFENSIVE_LINE + 100)
+                                    DEFENSIVE_LINE), DEFENSIVE_LINE)
                             else:
                                 self.predictedPoint = (
                                     self.predictionLine.get_x(DEFENSIVE_LINE), DEFENSIVE_LINE)
