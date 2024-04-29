@@ -594,7 +594,7 @@ class MainWindow(QMainWindow):
 
                 #check if new prediciton is needed (because reflection has taken place)
                 if(len(self.predictedPoints) >= 1 and self.lastPosition[1] < self.predictedPoints[0][1]):
-                    self.predictionMade = false
+                    self.predictionMade = False
 
                 if not self.predictionMade:
                     self.puckCollides = False
