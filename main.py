@@ -676,7 +676,7 @@ class MainWindow(QMainWindow):
                                     self.sendMoveValues(moveX, moveY)
 
                                     #move towards puck if last reflection
-                                    if(self.predictedPoints[0][1] <= 0):
+                                    if(self.collisionPoints[0][1] <= 0):
                                         self.positionsSent += 1
                                         moveX, moveY = self.mapCoordinates(
                                             self.predictedPoint[0],
