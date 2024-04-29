@@ -593,7 +593,7 @@ class MainWindow(QMainWindow):
             if self.isPuckGoingToRobot and self.wasPuckGoingToRobot:
 
                 #check if new prediciton is needed (because reflection has taken place)
-                if(len(self.predictedPoints) >= 1 and self.lastPosition[1] < self.collisionPoints[0][1]):
+                if(len(self.predictedPoints) >= 1 and self.lastPosition[1] < self.collisionPoints[0][1] and self.collisionPoints[0][1] > 0):
                     self.predictionMade = False
 
                 if not self.predictionMade:
