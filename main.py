@@ -672,6 +672,20 @@ class MainWindow(QMainWindow):
                                         f"Move To: X={moveX:.0f}, Y={moveY:.0f}")
                                     self.positionsSent += 1
                                     self.sendMoveValues(moveX, moveY)
+
+                                    #move towards puck if last reflection
+                                    if(self.predictedPoints[0][1] <= 0):
+                                        self.positionsSent += 1
+                                        moveX, moveY = self.mapCoordinates(
+                                            self.predictedPoint[0],
+                                            self.predictedPoint[1]+200,
+                                            CAMERA_FRAME_HEIGHT,
+                                            CAMERA_FRAME_ROBOT_MAX_Y,
+                                            TABLE_MAX_X,
+                                            TABLE_MAX_Y,
+                                        )
+                                        moveX = TABLE_MAX_X - moveX
+
                     except:
                         pass
             
