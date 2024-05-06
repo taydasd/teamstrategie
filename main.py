@@ -601,7 +601,7 @@ class MainWindow(QMainWindow):
                     self.puckCollides = False
 
                 #das passt sicher nicht  :)
-                    if len(self.collisionPoints) >= 1 and len(self.collisionPoints) >= 1:
+                    if len(self.collisionPoints) >= 1:
                         self.lastCollisionPoint = self.collisionPoints[0]
                     else:
                         self.lastCollisionPoint = self.currentPosition
@@ -610,7 +610,6 @@ class MainWindow(QMainWindow):
                     self.predictedPoints = []
                     self.collisionPoints = []
 
-    
 
                     # Draw line between current and last puck position
                     self.predictionLine = Line(self.lastPosition, self.currentPosition)
