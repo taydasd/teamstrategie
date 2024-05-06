@@ -600,16 +600,17 @@ class MainWindow(QMainWindow):
                 if not self.predictionMade:
                     self.puckCollides = False
 
+                #das passt sicher nicht  :)
+                    if len(self.collisionPoints) >= 1 and len(self.collisionPoints) >= 1:
+                        self.lastCollisionPoint = self.collisionPoints[0]
+                    else:
+                        self.lastCollisionPoint = self.currentPosition
                     #reset saved points
                     self.savedPoints = []
                     self.predictedPoints = []
                     self.collisionPoints = []
 
-                    #das passt sicher nicht  :)
-                    if self.collisionPoint[0] != 0 and self.collisionPoint[1] != 0:
-                        self.lastCollisionPoint = self.collisionPoints
-                    else:
-                        self.lastCollisionPoint = self.currentPosition
+    
 
                     # Draw line between current and last puck position
                     self.predictionLine = Line(self.lastPosition, self.currentPosition)
@@ -685,7 +686,7 @@ class MainWindow(QMainWindow):
                                     #move towards puck if last reflection
                                     if(self.collisionPoints[0][1] <= 0):
 
-                                        if(self.predictedPoint[0]>self.collisionPoint):
+                                        if(self.predictedPoint[0] > self.lastCollisionPoint[0]):
                                             zielpunkt = ((self.predictedPoint[0] / 2),
                                                 (self.lastCollisionPoint[1] / 2))
                                         else:
