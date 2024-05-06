@@ -112,6 +112,7 @@ class MainWindow(QMainWindow):
         self.predictedPoint = (0, 0)
         self.collisionPoint = (0, 0)
         self.collisionPoints = []
+        self.lastCollisionPoint = (0, 0)
         self.reflectionLine = Line((0, 0), (0, 0))
         self.puckCollides = False
         self.savedPoint = (0, 0)
@@ -604,6 +605,12 @@ class MainWindow(QMainWindow):
                     self.predictedPoints = []
                     self.collisionPoints = []
 
+                    #das passt sicher nicht  :)
+                    if self.collisionPoint[0] != 0 and self.collisionPoint[1] != 0:
+                        self.lastCollisionPoint = self.collisionPoints
+                    else:
+                        self.lastCollisionPoint = self.currentPosition
+
                     # Draw line between current and last puck position
                     self.predictionLine = Line(self.lastPosition, self.currentPosition)
 
@@ -677,10 +684,19 @@ class MainWindow(QMainWindow):
 
                                     #move towards puck if last reflection
                                     if(self.collisionPoints[0][1] <= 0):
+
+                                        if(self.predictedPoint[0]>self.collisionPoint):
+                                            zielpunkt = ((self.predictedPoint[0] / 2),
+                                                (self.lastCollisionPoint[1] / 2))
+                                        else:
+                                            zielpunkt = ((self.predictedPoint[0] + ((self.lastCollisionPoint[0]-self.predictedPoint[0]) / 2)),
+                                                (self.lastCollisionPoint[1] / 2))
+
+
                                         self.positionsSent += 1
                                         moveX, moveY = self.mapCoordinates(
-                                            self.predictedPoint[0],
-                                            self.predictedPoint[1]+200,
+                                            zielpunkt[0],
+                                            zielpunkt[1],
                                             CAMERA_FRAME_HEIGHT,
                                             CAMERA_FRAME_ROBOT_MAX_Y,
                                             TABLE_MAX_X,
