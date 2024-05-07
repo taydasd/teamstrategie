@@ -76,6 +76,7 @@ void loop() {
         //steppers.runSpeedToPosition();
 
         MoveToPosition(movement_x, movement_y);
+        SetStepperSettings();
         //stepperx.runToNewPosition(movement_x);
         //steppery.runToNewPosition(movement_y);
         Serial.println(millis()- StartZeit);
@@ -86,48 +87,7 @@ void loop() {
 }
 
 
-// void MoveToPosition(long movement_x, long movement_y) {
-//   // Calculate the distance each axis needs to move
-//   long distance_x = abs(movement_x - stepperx.currentPosition());
-//   long distance_y = abs(movement_y - steppery.currentPosition());
-
-//   // Calculate the maximum distance to move
-//   long max_distance = max(distance_x, distance_y);
-
-//   // Calculate the speed for each axis to reach the target at the same time
-//   float speed_x = (float)distance_x / max_distance * MAX_SPEED;
-//   float speed_y = (float)distance_y / max_distance * MAX_SPEED;
-
-//   // Set the speed and acceleration for each axis
-//   Serial.print("Setting acceleration for X axis: ");
-//   Serial.println(MAX_ACCEL);
-//   stepperx.setMaxSpeed(speed_x);
-//   stepperx.setAcceleration(MAX_ACCEL);
-
-//   Serial.print("Setting acceleration for Y axis: ");
-//   Serial.println(MAX_ACCEL_Y);
-//   steppery.setMaxSpeed(speed_y);
-//   steppery.setAcceleration(MAX_ACCEL_Y);
-
-//   // Move both axes to their target positions simultaneously
-//   stepperx.moveTo(movement_x);
-//   steppery.moveTo(movement_y);
-
-//   // Keep running both motors until both have reached their target positions
-//   while (stepperx.isRunning() || steppery.isRunning()) {
-//     stepperx.run();
-//     steppery.run();
-//   }
-
-//   // Reset the speed and acceleration to their default values
-//   SetStepperSettings();
-
-//   // Output the final positions
-//   Serial.println("Final X position: " + String(stepperx.currentPosition()));
-//   Serial.println("Final Y position: " + String(steppery.currentPosition()));
-// }
-
-void MoveToPosition(long movement_x, long movement_y) {
+void SetStepperProps(long movement_x, long movement_y){
   // Calculate the distance each axis needs to move
   long distance_x = abs(movement_x - stepperx.currentPosition());
   long distance_y = abs(movement_y - steppery.currentPosition());
@@ -141,32 +101,35 @@ void MoveToPosition(long movement_x, long movement_y) {
   // Adjust acceleration based on the ratio
   if (distance_ratio > 1) {
     // X-axis needs more acceleration
-    accel_y *= distance_ratio;
+    accel_y /= distance_ratio;
   } else {
     // Y-axis needs more acceleration
-    accel_x /= distance_ratio;
-  }
-  // Cap accelerations if they exceed 15000
-  if (accel_x > 15000) {
-    accel_x = 15000;
-    accel_y /= distance_ratio;
-  }
-  if (accel_y > 15000) {
-    accel_y = 15000;
     accel_x *= distance_ratio;
   }
-  // Calculate the speed for each axis to reach the target at the same time
+  //Serial.print("Setting acceleration for X axis: ");
+  //Serial.println(accel_x);
+  //Serial.print("Setting acceleration for Y axis: ");
+  //Serial.println(accel_y);
+
+   // Calculate the speed for each axis to reach the target at the same time
   float speed_x = sqrt(2 * distance_x * accel_x);
   float speed_y = sqrt(2 * distance_y * accel_y);
+
+
+  //Serial.print("Setting speed for X axis: ");
+  //Serial.println(speed_x);
+  //Serial.print("Setting speed for Y axis: ");
+  //Serial.println(speed_y);
   // Set the speed and acceleration for each axis
-  Serial.print("Setting acceleration for X axis: ");
-  Serial.println(accel_x);
-  Serial.print("Setting acceleration for Y axis: ");
-  Serial.println(accel_y);
   stepperx.setMaxSpeed(speed_x);
   stepperx.setAcceleration(accel_x);
   steppery.setMaxSpeed(speed_y);
   steppery.setAcceleration(accel_y);
+  
+}
+
+void MoveToPosition(long movement_x, long movement_y) {
+  SetStepperProps(movement_x, movement_y);
   // Move both axes to their target positions simultaneously
   stepperx.moveTo(movement_x);
   steppery.moveTo(movement_y);
@@ -178,52 +141,6 @@ void MoveToPosition(long movement_x, long movement_y) {
   // Reset the speed and acceleration to their default values
   SetStepperSettings();
   // Output the final positions
-  Serial.println("Final X position: " + String(stepperx.currentPosition()));
-  Serial.println("Final Y position: " + String(steppery.currentPosition()));
+  //Serial.println("Final X position: " + String(stepperx.currentPosition()));
+  //Serial.println("Final Y position: " + String(steppery.currentPosition()));
 }
-
-// void MoveToPosition(long movement_x, long movement_y) {
-//   // Calculate the distance each axis needs to move
-//   long distance_x = abs(movement_x - stepperx.currentPosition());
-//   long distance_y = abs(movement_y - steppery.currentPosition());
-
-//   // Calculate the maximum distance to move
-//   long max_distance = max(distance_x, distance_y);
-
-//   // Calculate the time to reach the target for each axis
-//   float time_x = sqrt(2 * distance_x / MAX_ACCEL);
-//   float time_y = sqrt(2 * distance_y / MAX_ACCEL_Y);
-
-//   // Calculate the speed for each axis to reach the target at the same time
-//   float speed_x = distance_x / time_x;
-//   float speed_y = distance_y / time_y;
-
-//   // Adjust acceleration to ensure both axes reach their target at the same time
-//   float accel_adjustment = max(speed_x / MAX_SPEED, speed_y / MAX_SPEED);
-//   float accel_x = MAX_ACCEL * accel_adjustment;
-//   float accel_y = MAX_ACCEL_Y * accel_adjustment;
-
-//   // Set the speed and acceleration for each axis
-//   stepperx.setMaxSpeed(speed_x);
-//   stepperx.setAcceleration(accel_x);
-
-//   steppery.setMaxSpeed(speed_y);
-//   steppery.setAcceleration(accel_y);
-
-//   // Move both axes to their target positions simultaneously
-//   stepperx.moveTo(movement_x);
-//   steppery.moveTo(movement_y);
-
-//   // Keep running both motors until both have reached their target positions
-//   while (stepperx.isRunning() || steppery.isRunning()) {
-//     stepperx.run();
-//     steppery.run();
-//   }
-
-//   // Reset the speed and acceleration to their default values
-//   SetStepperSettings();
-
-//   // Output the final positions
-//   Serial.println("Final X position: " + String(stepperx.currentPosition()));
-//   Serial.println("Final Y position: " + String(steppery.currentPosition()));
-// }
