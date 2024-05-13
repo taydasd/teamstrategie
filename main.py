@@ -677,15 +677,14 @@ class MainWindow(QMainWindow):
                                 )
                                 moveX = TABLE_MAX_X - moveX
                                 
-                                if self.puckCollides:
-                                    negKehrwert = 1/(-1*self.predictionLine.get_m) 
-                                    robotX = self.currentRobotPosition[0]
-                                    robotY = self.currentRobotPosition[1]
-                                    yAchsenab = robotY - negKehrwert * robotX
+                                if True:
+                                    negKehrwert = 1/(-1*self.predictionLine.get_m()) 
+                                    robotXtwo = self.currentRobotPosition[0]
+                                    robotYtwo = self.currentRobotPosition[1]
+                                    yAchsenab = robotYtwo - negKehrwert * robotXtwo
                                     
-                                    xZiel = (yAchsenab - robotX) / (self.predictionLine.get_m - negKehrwert)
-                                    yZiel = self.predictionLine.get_m * xZiel + robotX
-                                                   
+                                    xZiel = abs((yAchsenab - robotXtwo) / (self.predictionLine.get_m() - negKehrwert))
+                                    yZiel = abs(self.predictionLine.get_m() * xZiel + robotXtwo)
                                     # Überprüfen ob xZiel, yZiel gültig
                                                                         
                                     moveX, moveY = self.mapCoordinates(
