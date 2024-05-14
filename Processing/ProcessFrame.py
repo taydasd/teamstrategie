@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from Constants import *
+import threading
 
 lastRobotData = ((0, 0), 0)
 lastRobotDetection = 0
@@ -49,14 +50,23 @@ def processFrame(frame, sliders):
     # TODO: This is eating performance
     # Robot Detection eats more than puck detection.
     # Detect the puck and update UI values.
-    ((x, y), radius), ((robotX, robotY), robotRadius) = detectPuckCustomizeable(
-        filteredFrame=frame, 
-        boundaries=[(lowerBoundary, upperBoundary, puckMinRadius, puckMaxRadius), (robotLowerBoundary, robotUpperBoundary, robotMinRadius, robotMaxRadius)], 
-        resizeFrame=resizeFrame,
-        useBlur=True,
-        useUMat=True,
-        detectRobot=lastRobotDetection == 0
-    )
+    detect_thread = threading.Thread(target=detectPuckCustomizeable, args=(
+        frame, 
+        [(lowerBoundary, upperBoundary, puckMinRadius, puckMaxRadius), (robotLowerBoundary, robotUpperBoundary, robotMinRadius, robotMaxRadius)], 
+        resizeFrame,
+        True,
+        True,
+        lastRobotDetection == 0
+    ))
+
+    # Start the thread
+    detect_thread.start()
+
+    # Wait for the thread to finish
+    detect_thread.join()
+
+    # Get the results
+    ((x, y), radius), ((robotX, robotY), robotRadius) = detect_thread.result
 
     # If the robot is detected, save the data.
     if robotX != -1 and robotY != -1 and robotRadius != -1:
