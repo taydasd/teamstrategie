@@ -9,7 +9,7 @@ from picamera2 import Picamera2
 
 class Camera:
     def __init__(
-            self, camera_index, frame_width, frame_height, focus, buffer_size, fps, camera_stream_url
+            self, camera_index, frame_width, frame_height, focus, buffer_size, fps
     ):
         self.fps = fps
 
@@ -34,8 +34,9 @@ class Camera:
         # self.stream.set(cv2.CAP_PROP_FOCUS, focus)
         # self.stream.set(cv2.CAP_PROP_BUFFERSIZE, buffer_size)
         # (self.grabbed, self.frame) = self.stream.read()
-        # self.stopped = False
-        # self.new_frame = False
+        self.grabbed = True
+        self.stopped = False
+        self.new_frame = False
 
     def start(self):
         Thread(target=self.get_next_frame, args=()).start()
