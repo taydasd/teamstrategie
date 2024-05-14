@@ -3,8 +3,8 @@ const gameTime = 600; // 10 Mins
 
 setInterval(() => {
     fetch("state").then((res) => res.json().then((json) => {
-        gpio5.value += json.gpio5; //bot?
-        gpio6.value += json.gpio6; //prof?
+        gpio5.value = json.gpio5; //bot?
+        gpio6.value = json.gpio6; //prof?
         
         var difference = Math.abs(gpio5.value - gpio6.value);
 
