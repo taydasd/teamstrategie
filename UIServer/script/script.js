@@ -14,7 +14,7 @@ setInterval(() => {
 
         gpio5.value = scoreGpio5; //bot?
         gpio6.value = scoreGpio6; //prof?
-        
+
         let difference = Math.abs(gpio5.value - gpio6.value);
 
         if (gpio5.value > gpio6.value && difference > 2) {
