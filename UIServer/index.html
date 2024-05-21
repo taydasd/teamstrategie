@@ -10,34 +10,137 @@
     <script src="script/script.js" defer></script>
     <title>UIRockyHockey</title>
     <style>
-        #background {
+        
+        #background-container {
+            position: fixed;
+            top: -54px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 900px; 
+            height: auto; 
+            z-index: 1; 
+        }
+        #background-image {
+            width: 100%;
+            height: auto;
+        }
+
+        #background-video {
             position: fixed;
             right: 0;
             bottom: 0;
             width: 100%;
             height: 100%;
             object-fit: fill;
+            opacity: 0.9;
         }
+
+        
         #countdown {
-            position: fixed;
-            top: 10%;
-            left: 50%;
+            position: absolute;
+            top: 390px; 
+            left: 458px;
+            width: 95px;
+            height: 40px;
             transform: translateX(-50%);
+            z-index: 2;
+            background-color: #333; 
+            color: white; 
+            padding: 10px; 
+            border-radius: 5px; 
+            text-align: center;
         }
+
+        
         #scoreboard {
-            position: fixed;
-            top: 0;
-            left: 0;
+            position: absolute;
+            top: 50%; 
+            left: 50%;
+            transform: translate(-50%, -50%);
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7); /* Hintergrundfarbe mit Transparenz */
-            display: none; /* Standardmäßig ausgeblendet */
+            background-color: rgba(0, 0, 0, 0.7); 
+            display: none; 
+            z-index: 3;
         }
+
+        
         #score-gif {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+        }
+
+        
+        #start-button {
+            position: absolute;
+            top: 292px; 
+            left: 408px;
+            width:100px;
+            background-color: green; 
+            color: white;
+            z-index: 2;
+        }
+
+        #stop-button {
+            position: absolute;
+            top: 335px; 
+            left: 408px;
+            width:100px;
+            background-color: red; 
+            color: white;
+            z-index: 2;
+        }
+
+    
+        #scoreRoboter {
+            position: absolute;
+            top: 310px; 
+            left: 200px;
+            width: 160px;
+            height: 110px;
+            z-index: 2;
+            background-color: #333; 
+            color: rgb(236, 150, 11);
+        }
+
+        #scoreSpieler {
+            position: absolute;
+            top: 310px; 
+            right: 192px;
+            width: 160px;
+            height: 110px;
+            z-index: 2;
+            background-color: #333; 
+            color: rgb(236, 150, 11);
+        }
+
+        #robot-label, #name-label, #name-input {
+            position: absolute;
+            z-index: 2;
+            background-color: #333; 
+            color: white; 
+            padding: 10px; 
+            border: none; 
+            border-radius: 5px; 
+            text-align: center;
+        }
+
+        #robot-label {
+            top: 265px; 
+            left: 200px; 
+            height: 40px;
+            width: 170px;
+        }
+
+
+        #name-input {
+            top: 265px; 
+            right: 188px; 
+            width: 200px; 
+            height: 40px;
+            width: 170px;
         }
     </style>
 </head>
@@ -49,19 +152,32 @@
     <audio id="godlikeAudio" src="resources/sounds/godlike.wav"></audio>
     <audio id="unstoppableAudio" src="resources/sounds/unstoppable.wav"></audio>
 
-    <!-- <img id="background" src="resources/background-hd720-png.apng"></img> -->
-    <video id="background" src="resources/background-hd720-h264.mp4" loop autoplay muted></video>
+    <video id="background-video" src="resources/background-hd720-h264.mp4" loop autoplay muted></video>
 
+   
+
+    <div id="background-container">
+        <img id="background-image" src="resources/Spielstandanzeige_EM.png" alt="Background Image">
+
+       
+        <input disabled id="countdown">
+
+       
+        <input disabled id="scoreRoboter"> 
+        <input disabled id="scoreSpieler">
+
+       
+        <button id="start-button" onclick="startGame()" type="button" class="btn btn-light">Start</button>
+        <button id="stop-button" onclick="stopGame()" type="button" class="btn btn-light">Stop</button>
+
+        <label id="robot-label">RH 2024</label>
+        <input id="name-input" type="text" placeholder="Dein Spielername">
+    </div>
+
+    
     <div id="scoreboard">
         <img id="score-gif" src="" alt="Tor-GIF">
     </div>
-
-    <input disabled id="gpio5" style="position: fixed; top: 10%; left: 5%;">
-    <input disabled id="gpio6" style="position: fixed; top: 10%; right: 5%;">
-    <input disabled id="countdown">
-
-    <button onclick="startGame()" type="button" class="btn btn-light" style="position: fixed; bottom: 10%; left: 5%">Start</button>
-    <button onclick="stopGame()" type="button" class="btn btn-light" style="position: fixed; bottom: 10%; right: 5%">Stop</button>
 </body>
 
 </html>
