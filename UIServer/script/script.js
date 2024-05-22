@@ -17,12 +17,22 @@ setInterval(() => {
 
         let difference = Math.abs(gpio5.value - gpio6.value);
 
-        if (gpio5.value > gpio6.value && difference > 2) {
-            godlikeAudio.play();
-            playGIF('bot');
-        } else if (gpio5.value < gpio6.value && difference > 2) {
-            unstoppableAudio.play();
-            playGIF('prof');
+        if (gpio5.value > gpio6.value && difference == 2) {
+            playGIF('losingteeth');
+            goalAudio.src = 'resources/sounds/godlike.wav';
+            goalAudio.play();
+        } else if (gpio5.value > gpio6.value && difference > 4) {
+            playGIF('dominance');
+            goalAudio.src = 'resources/sounds/dominating.wav';
+            goalAudio.play();
+        } else if (gpio5.value < gpio6.value && difference == 2) {
+            playGIF('pulp');
+            goalAudio.src = 'resources/sounds/unstoppable.wav';
+            goalAudio.play();
+        } else if (gpio5.value < gpio6.value && difference > 4) {
+            playGIF('godzilla');
+            goalAudio.src = 'resources/sounds/rampage.wav';
+            goalAudio.play();
         }
     }))
 }, 500);
@@ -65,14 +75,18 @@ function startTimer(duration) {
     }, 1000);
 };
 
-function playGIF(player) {
+function playGIF(gifName) {
     const gifElement = document.getElementById('score-gif');
     const scoreboard = document.getElementById('scoreboard');
 
-    if (player === 'prof') {
+    if (gifName === 'pulp') {
         gifElement.src = 'resources/gifs/pulp.gif';
-    } else if (player === 'bot') {
+    } else if (gifName === 'losingteeth') {
         gifElement.src = 'resources/gifs/losingteeth.gif';
+    } else if (gifName === 'godzilla') {
+        gifElement.src = 'resources/gifs/godzilla.gif';
+    } else if (gifName === 'dominance') {
+        gifElement.src = 'resources/gifs/dominance.gif';
     }
 
     scoreboard.style.display = 'block';
