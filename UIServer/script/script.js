@@ -9,22 +9,22 @@ setInterval(() => {
 
 function setScores(playerScore, botScore)
 {
-    if (playerScoreField.value !== String(playerScore) || botScoreField.value !== String(botScore)) {
-        playerScoreField.value = playerScore;
-        botScoreField.value = botScore;
+    const playerIncrement = playerScore - playerScoreField.value;
+    const botIncrement    = botScore    - botScoreField.value;
 
-        let difference = Math.abs(playerScore - botScore);
+    if (playerIncrement > 0 || botIncrement > 0) {
+        let playerLead = playerScore - botScore;
 
-        if (difference > 2) {
-            if (playerScore > botScore) {
-                godlikeAudio.play();
-                playGIF('bot');
-            } else if (playerScore < botScore) {
-                unstoppableAudio.play();
-                playGIF('prof');
-            }
+        if (playerLead < -2 && botIncrement > 0) {
+            godlikeAudio.play();
+            playGIF('bot');
+        } else if (playerLead > 2 && playerIncrement > 0) {
+            unstoppableAudio.play();
+            playGIF('prof');
         }
     }
+    playerScoreField.value = playerScore;
+    botScoreField.value = botScore;
 }
 
 function startGame() {
