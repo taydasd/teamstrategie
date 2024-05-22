@@ -1,34 +1,36 @@
 const gameTime = 600; // 10 Mins
 let gameStopped = true;
-let scoreGpio5 = 0;
-let scoreGpio6 = 0;
 
 setInterval(() => {
     fetch("state").then((res) => res.json().then((json) => {
-        if (json.gpio5 === "1") {
-            scoreGpio5++;
-        }
-        if (json.gpio6 === "1") {
-            scoreGpio6++;
-        }
-
-        gpio5.value = scoreGpio5; //bot?
-        gpio6.value = scoreGpio6; //prof?
-
-        let difference = Math.abs(gpio5.value - gpio6.value);
-
-        if (gpio5.value > gpio6.value && difference > 2) {
-            godlikeAudio.play();
-            playGIF('bot');
-        } else if (gpio5.value < gpio6.value && difference > 2) {
-            unstoppableAudio.play();
-            playGIF('prof');
-        }
+        setScores(json.playerScore, json.botScore);
     }))
 }, 500);
 
+function setScores(playerScore, botScore)
+{
+    if (playerScoreField.value !== String(playerScore) || botScoreField.value !== String(botScore)) {
+        playerScoreField.value = playerScore;
+        botScoreField.value = botScore;
+
+        let difference = Math.abs(playerScore - botScore);
+
+        if (difference > 2) {
+            if (playerScore > botScore) {
+                godlikeAudio.play();
+                playGIF('bot');
+            } else if (playerScore < botScore) {
+                unstoppableAudio.play();
+                playGIF('prof');
+            }
+        }
+    }
+}
+
 function startGame() {
-    scoreGpio5 = scoreGpio6 = 0;
+    fetch("resetScores");
+    fetch("start");
+    setScores(0, 0);
     startAudio.play();
     backgroundAudio.play();
     gameStopped = false;
@@ -36,6 +38,7 @@ function startGame() {
 };
 
 function stopGame() {
+    fetch("stop");
     backgroundAudio.pause();
     backgroundAudio.currentTime = 0;
     gameStopped = true;
