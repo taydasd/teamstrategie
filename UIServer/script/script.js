@@ -15,12 +15,28 @@ function setScores(playerScore, botScore)
     if (playerIncrement > 0 || botIncrement > 0) {
         let playerLead = playerScore - botScore;
 
-        if (playerLead < -2 && botIncrement > 0) {
-            godlikeAudio.play();
-            playGIF('bot');
-        } else if (playerLead > 2 && playerIncrement > 0) {
-            unstoppableAudio.play();
-            playGIF('prof');
+        if (playerIncrement > 0) {
+            if (playerLead == 2) {
+                playGIF('losingteeth');
+                goalAudio.src = 'resources/sounds/godlike.wav';
+                goalAudio.play();
+            } else if (playerLead > 4) {
+                playGIF('dominance');
+                goalAudio.src = 'resources/sounds/dominating.wav';
+                goalAudio.play();
+            }
+        }
+        if (botIncrement > 0)
+        {
+            if (playerLead == -2) {
+                playGIF('pulp');
+                goalAudio.src = 'resources/sounds/unstoppable.wav';
+                goalAudio.play();
+            } else if (playerLead < -4) {
+                playGIF('godzilla');
+                goalAudio.src = 'resources/sounds/rampage.wav';
+                goalAudio.play();
+            }
         }
     }
     playerScoreField.value = playerScore;
@@ -68,14 +84,18 @@ function startTimer(duration) {
     }, 1000);
 };
 
-function playGIF(player) {
+function playGIF(gifName) {
     const gifElement = document.getElementById('score-gif');
     const scoreboard = document.getElementById('scoreboard');
 
-    if (player === 'prof') {
+    if (gifName === 'pulp') {
         gifElement.src = 'resources/gifs/pulp.gif';
-    } else if (player === 'bot') {
+    } else if (gifName === 'losingteeth') {
         gifElement.src = 'resources/gifs/losingteeth.gif';
+    } else if (gifName === 'godzilla') {
+        gifElement.src = 'resources/gifs/godzilla.gif';
+    } else if (gifName === 'dominance') {
+        gifElement.src = 'resources/gifs/dominance.gif';
     }
 
     scoreboard.style.display = 'block';
