@@ -3,17 +3,9 @@ let gameStopped = true;
 
 setInterval(() => {
     fetch("state").then((res) => res.json().then((json) => {
-        setScores(json.playerScore, json.botScore);
-    }))
-}, 500);
-
-function setScores(playerScore, botScore)
-{
-    const playerIncrement = playerScore - playerScoreField.value;
-    const botIncrement    = botScore    - botScoreField.value;
-
-    if (playerIncrement > 0 || botIncrement > 0) {
-        let playerLead = playerScore - botScore;
+        const playerIncrement = json.playerScore - playerScoreField.value;
+        const botIncrement    = json.botScore    - botScoreField.value;
+        const playerLead      = json.playerScore - json.botScore;
 
         if (playerIncrement > 0) {
             if (playerLead == 2) {
@@ -38,15 +30,15 @@ function setScores(playerScore, botScore)
                 goalAudio.play();
             }
         }
-    }
-    playerScoreField.value = playerScore;
-    botScoreField.value = botScore;
-}
+
+        playerScoreField.value = playerScore;
+        botScoreField.value = botScore;
+    }))
+}, 500);
 
 async function startGame() {
     await fetch("resetScores");
     await fetch("start");
-    setScores(0, 0);
     startAudio.play();
     backgroundAudio.play();
     gameStopped = false;
