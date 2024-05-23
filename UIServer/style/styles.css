@@ -38,6 +38,18 @@
     text-align: center;
 }
 
+#playerScoreField {
+    position: fixed;
+    top: 10%;
+    left: 5%;
+}
+
+#botScoreField {
+    position: fixed;
+    top: 10%;
+    right: 5%;
+}
+
 
 #scoreboard {
     position: absolute;

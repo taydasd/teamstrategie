@@ -1,50 +1,56 @@
 const gameTime = 600; // 10 Mins
 let gameStopped = true;
-let scoreGpio5 = 0;
-let scoreGpio6 = 0;
 
 setInterval(() => {
     fetch("state").then((res) => res.json().then((json) => {
-        if (json.gpio5 === "1") {
-            scoreGpio5++;
+        const playerIncrement = json.playerScore - playerScoreField.value;
+        const botIncrement    = json.botScore    - botScoreField.value;
+        const playerLead      = json.playerScore - json.botScore;
+
+        if (playerIncrement > 0) {
+            if (playerLead == 2) {
+                playGIF('losingteeth');
+                goalAudio.src = 'resources/sounds/godlike.wav';
+                goalAudio.play();
+            } else if (playerLead > 4) {
+                playGIF('dominance');
+                goalAudio.src = 'resources/sounds/dominating.wav';
+                goalAudio.play();
+            }
         }
-        if (json.gpio6 === "1") {
-            scoreGpio6++;
+        if (botIncrement > 0)
+        {
+            if (playerLead == -2) {
+                playGIF('pulp');
+                goalAudio.src = 'resources/sounds/unstoppable.wav';
+                goalAudio.play();
+            } else if (playerLead < -4) {
+                playGIF('godzilla');
+                goalAudio.src = 'resources/sounds/rampage.wav';
+                goalAudio.play();
+            }
         }
 
-        gpio5.value = scoreGpio5; //bot?
-        gpio6.value = scoreGpio6; //prof?
-
-        let difference = Math.abs(gpio5.value - gpio6.value);
-
-      var difference = Math.abs(gpio5.value - gpio6.value);
-
-      if (gpio5.value > gpio6.value && difference > 2) {
-        godlikeAudio.play();
-        playGIF("bot");
-      } else if (gpio5.value < gpio6.value && difference > 2) {
-        unstoppableAudio.play();
-        playGIF("prof");
-      }
-    })
-  );
+        playerScoreField.value = json.playerScore;
+        botScoreField.value = json.botScore;
+    }))
 }, 500);
 
-function startGame() {
-  document.getElementById('name-input').readOnly = true;
-    scoreGpio5 = scoreGpio6 = 0;
+async function startGame() {
+    await fetch("resetScores");
+    await fetch("start");
     startAudio.play();
     backgroundAudio.play();
     gameStopped = false;
     startTimer(gameTime);
 };
 
-function stopGame() {
-  document.getElementById("name-input").readOnly = false;
-  backgroundAudio.pause();
-  backgroundAudio.currentTime = 0;
-  gameStopped = true;
-}
+async function stopGame() {
+    await fetch("stop");
+    backgroundAudio.pause();
+    backgroundAudio.currentTime = 0;
+    gameStopped = true;
+};
 
 function startTimer(duration) {
     let timer = duration;
@@ -60,8 +66,28 @@ function startTimer(duration) {
 
     countdown.value = minutes + ":" + seconds;
 
-    if (--timer < 0) {
-      timer = duration;
+        if (--timer < 0) {
+            timer = duration;
+        }
+
+        if (gameStopped) {
+            clearInterval(intervalId);
+        }
+    }, 1000);
+};
+
+function playGIF(gifName) {
+    const gifElement = document.getElementById('score-gif');
+    const scoreboard = document.getElementById('scoreboard');
+
+    if (gifName === 'pulp') {
+        gifElement.src = 'resources/gifs/pulp.gif';
+    } else if (gifName === 'losingteeth') {
+        gifElement.src = 'resources/gifs/losingteeth.gif';
+    } else if (gifName === 'godzilla') {
+        gifElement.src = 'resources/gifs/godzilla.gif';
+    } else if (gifName === 'dominance') {
+        gifElement.src = 'resources/gifs/dominance.gif';
     }
 
     if (gameStopped) {
