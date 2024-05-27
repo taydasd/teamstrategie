@@ -581,13 +581,10 @@ class MainWindow(QMainWindow):
             # Calculate robot and puck speed
             self.puckSpeed = math.sqrt((self.currentPosition[0] - self.lastPosition[0]) ** 2 + (
                     self.currentPosition[1] - self.lastPosition[1]) ** 2)
-            self.puckSpeed = self.puckSpeed / (self.currentFrameTimestamp - self.lastFrameTimestamp).seconds
-            self.puckSpeed *= 1000
             self.robotSpeed = math.sqrt((self.currentRobotPosition[0] - self.lastRobotPosition[0]) ** 2 + (
                     self.currentRobotPosition[1] - self.lastRobotPosition[1]) ** 2)
             self.robotIsStopped = self.robotSpeed <= 1 or self.robotSpeed == -1
-            self.robotSpeed = self.puckSpeed / (self.currentFrameTimestamp - self.lastFrameTimestamp).seconds
-
+            
             frame = self.updatePreCalculationUi(frame, x, y, radius, robotX, robotY, robotRadius)
 
             self.isPuckGoingToRobot = self.currentPosition[1] < self.lastPosition[1] and (
@@ -888,8 +885,7 @@ class MainWindow(QMainWindow):
         self.frameCounter = self.frameCounter + 1
 
         return frame
-
-
+    
     def mapCoordinates(
             self, x, y, maxWidthFrom, maxHeightFrom, maxWidthTo, maxHeightTo
     ):
