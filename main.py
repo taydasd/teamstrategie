@@ -668,11 +668,12 @@ class MainWindow(QMainWindow):
                             if 50 < self.predictedPoint[0] < (CAMERA_FRAME_HEIGHT - 50):
                                 # Calculate robot movement to the predicted puck position
                                 if (self.predictionLine.get_angle() >= 0) and (self.currentRobotPosition[0]<self.predictedPoint[0]): 
-                                    wert = self.predictionLine.get_m()+(1/self.predictionLine.get_m())
+                                    steigerung=self.predictionLine.get_m()
+                                    wert = steigerung+(1/steigerung)
                                     robotX = self.currentRobotPosition[0]
                                     robotY = self.currentRobotPosition[1]
-                                    Xachse = (robotY * self.predictedPoint[0] + (1/self.predictionLine.get_m())*robotX)*wert
-                                    Yachse = self.predictionLine.get_y()
+                                    Xachse = (robotY * self.predictedPoint[0] + (1/steigerung)*robotX)*wert
+                                    Yachse = self.predictionLine.get_y(Xachse)
                                     moveX, moveY = self.mapCoordinates(
                                         Xachse,
                                         Yachse,
