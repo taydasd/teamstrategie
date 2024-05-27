@@ -17,9 +17,10 @@ class Camera:
             # self.stream = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
             self.stream = cv2.VideoCapture(camera_stream_url)
         else:
-            self.stream = cv2.VideoCapture(camera_index)
-            # self.stream = cv2.VideoCapture(camera_stream_url)
+            # self.stream = cv2.VideoCapture(camera_index)
+            self.stream = cv2.VideoCapture(camera_stream_url)
             
+        # This would be important if we directly pull from the camera instead of a stream.
         # self.stream.set(cv2.CAP_PROP_HW_ACCELERATION, cv2.VIDEO_ACCELERATION_ANY)
         # # self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
         # self.stream.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
@@ -35,7 +36,6 @@ class Camera:
 
     def start(self):
         Thread(target=self.get_next_frame, args=()).start()
-        # Thread(target=self.fetch_image_from_url, args=()).start()
         return self
 
     def get_current_frame(self):
@@ -60,31 +60,6 @@ class Camera:
                 self.new_frame = True
             elapsed_time = time.time() - start_time
             time.sleep(max(0, frame_time - elapsed_time))
-
-    def fetch_image_from_url(self):
-        while not self.stopped:
-            start_time = time.time()  # Start the timer
-            try:
-                response = requests.get(self.url)
-                if response.status_code == 200:
-                    image_bytes = BytesIO(response.content)
-                    image_array = np.asarray(bytearray(image_bytes.read()), dtype=np.uint8)
-                    tmp_frame = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
-                    # tmp_frame = cv2.rotate(
-                    #     tmp_frame, rotateCode=cv2.ROTATE_90_CLOCKWISE)
-                    # tmp_frame = cv2.flip(tmp_frame, 1)
-                    # tmp_frame = cv2.flip(tmp_frame, 1)
-                    self.frame = tmp_frame
-                    self.new_frame = True
-                else:
-                    print("Failed to fetch image. Status code:", response.status_code)
-                    return None
-            except Exception as e:
-                print("An error occurred:", e)
-                return None
-            finally:
-                end_time = time.time()  # End the timer
-                print("Time taken for this run: {:.2f} seconds".format(end_time - start_time))
 
     def stop(self):
         self.stopped = True
