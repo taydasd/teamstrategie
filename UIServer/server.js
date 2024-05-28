@@ -1,11 +1,6 @@
-<<<<<<< HEAD
-const express = require("express");
-// const rpio = require('rpio');
-=======
 const express = require('express');
 const rpio = require('rpio');
 const { spawn } = require('node:child_process');
->>>>>>> 2ce63d0613718ba0c5390305b54410bcbe054bd4
 
 const app = express();
 
@@ -17,22 +12,10 @@ let botScore    = 0;
 const botGoalPin    = 5;
 const playerGoalPin = 6;
 
-let playerScore = 0;
-let botScore    = 0;
-
-const botGoalPin    = 5;
-const playerGoalPin = 6;
-
-<<<<<<< HEAD
-// rpio.init({mapping: 'gpio'});
-// rpio.open(5, rpio.INPUT);
-// rpio.open(6, rpio.INPUT);
-=======
 rpio.init({mapping: 'gpio'});
 rpio.open(botGoalPin, rpio.INPUT);
 rpio.open(playerGoalPin, rpio.INPUT);
 const ledDriver = spawn('python', ['ledDriver/driver.py'])
->>>>>>> 2ce63d0613718ba0c5390305b54410bcbe054bd4
 
 app.use("/resources", express.static("resources"));
 app.use("/script", express.static("script"));
@@ -56,8 +39,6 @@ app.get('/state', (req, res) => {
     res.json({"playerScore": playerScore, "botScore": botScore});
 });
 
-<<<<<<< HEAD
-=======
 let counter = 0;
 let animationInterval;
 
@@ -91,5 +72,4 @@ app.get('/start', (req, res) => { rpio.poll(botGoalPin, onGoalSensor); rpio.poll
 /// Stop counting scores.
 app.get('/stop' , (req, res) => { rpio.poll(botGoalPin, null);         rpio.poll(playerGoalPin, null);         res.send("stopped.");});
 
->>>>>>> 2ce63d0613718ba0c5390305b54410bcbe054bd4
 app.listen(PORT, () => console.log("Server listening on port", PORT));
