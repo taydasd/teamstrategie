@@ -3,8 +3,8 @@ let gameStopped = true;
 
 setInterval(() => {
     fetch("state").then((res) => res.json().then((json) => {
-        const playerIncrement = json.playerScore - playerScoreField.value;
-        const botIncrement    = json.botScore    - botScoreField.value;
+        const playerIncrement = json.playerScore - scoreSpieler.value;
+        const botIncrement    = json.botScore    - scoreRoboter.value;
         const playerLead      = json.playerScore - json.botScore;
 
         if (playerIncrement > 0) {
@@ -31,8 +31,8 @@ setInterval(() => {
             }
         }
 
-        playerScoreField.value = json.playerScore;
-        botScoreField.value = json.botScore;
+        scoreSpieler.value = json.playerScore;
+        scoreRoboter.value = json.botScore;
     }))
 }, 500);
 
