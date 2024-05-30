@@ -123,7 +123,7 @@
 }
 
 #robot-label,
-#name-input {
+#prof-label {
     position: absolute;
     z-index: 2;
     background-color: #333;
@@ -142,7 +142,7 @@
 }
 
 
-#name-input {
+#prof-label {
     top: 265px;
     right: 188px;
     width: 200px;
