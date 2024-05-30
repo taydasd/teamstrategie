@@ -4,8 +4,8 @@ let gameStopped = true;
 setInterval(() => {
     fetch("state").then((res) => res.json().then((json) => {
         const playerIncrement = json.playerScore - scoreSpieler.value;
-        const botIncrement    = json.botScore    - scoreRoboter.value;
-        const playerLead      = json.playerScore - json.botScore;
+        const botIncrement = json.botScore - scoreRoboter.value;
+        const playerLead = json.playerScore - json.botScore;
 
         if (playerIncrement > 0) {
             if (playerLead == 2) {
@@ -18,8 +18,7 @@ setInterval(() => {
                 goalAudio.play();
             }
         }
-        if (botIncrement > 0)
-        {
+        if (botIncrement > 0) {
             if (playerLead == -2) {
                 playGIF('pulp');
                 goalAudio.src = 'resources/sounds/unstoppable.wav';
@@ -57,14 +56,14 @@ function startTimer(duration) {
     let minutes, seconds;
     let intervalId;
 
-  intervalId = setInterval(function () {
-    minutes = parseInt(timer / 60, 10);
-    seconds = parseInt(timer % 60, 10);
+    intervalId = setInterval(function () {
+        minutes = parseInt(timer / 60, 10);
+        seconds = parseInt(timer % 60, 10);
 
-    minutes = minutes < 10 ? "0" + minutes : minutes;
-    seconds = seconds < 10 ? "0" + seconds : seconds;
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
 
-    countdown.value = minutes + ":" + seconds;
+        countdown.value = minutes + ":" + seconds;
 
         if (--timer < 0) {
             timer = duration;
