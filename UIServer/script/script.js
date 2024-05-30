@@ -78,7 +78,7 @@ function startTimer(duration) {
 
 function playGIF(gifName) {
     const gifElement = document.getElementById('score-gif');
-    const scoreboard = document.getElementById('scoreboard');
+    const gifDisplay = document.getElementById('gifDisplay');
 
     if (gifName === 'pulp') {
         gifElement.src = 'resources/gifs/pulp.gif';
@@ -90,10 +90,10 @@ function playGIF(gifName) {
         gifElement.src = 'resources/gifs/dominance.gif';
     }
 
-    scoreboard.style.display = 'block';
+    gifDisplay.style.display = 'block';
 
     setTimeout(() => {
-        scoreboard.style.display = 'none';
+        gifDisplay.style.display = 'none';
     }, 3000);
 };
 
