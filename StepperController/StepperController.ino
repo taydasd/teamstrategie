@@ -50,10 +50,18 @@ void loop() {
   if (!st_enabled) {
     enable_steppers();
   }
+
   if (Serial.available() > 0) {
-    StartZeit = millis();
-    String command = Serial.readStringUntil('\n');
+    //StartZeit = millis();
+
+    // Immer den neuesten Command nehmen der übertragen wurde
+    String command = "";
+    do {
+      command = Serial.readStringUntil('\n');
+      Serial.println(command);
+    } while (Serial.available() > 0);
     command.trim();
+
     if (strcmp(command.c_str(), "MAXIMA") == 0) {
       Serial.println(String(MAX_X) + "," + String(MAX_Y));
     } else if (strcmp(command.c_str(), "POSITION") == 0) {
@@ -69,22 +77,22 @@ void loop() {
       int delimiterIndex = command.indexOf(',');
       long movement_x = command.substring(0, delimiterIndex).toInt();   //new x pos
       long movement_y = command.substring(delimiterIndex + 1).toInt();  //new y pos
-      long positions[2] = {movement_x, movement_y};
+      long positions[2] = { movement_x, movement_y };
       if (movement_x >= 0 && movement_x <= MAX_X && movement_y >= 0 && movement_y <= MAX_Y) {
 
         SetStepperSettings();
         // steppers.moveTo(positions); // For MulitStepper Libary
-        
-       
+
+
         // steppers.runSpeedToPosition();
-        
-        
+
+
 
         MoveToPosition(movement_x, movement_y);
         SetStepperSettings();
         //stepperx.runToNewPosition(movement_x);
         //steppery.runToNewPosition(movement_y);
-        Serial.println(millis()- StartZeit);
+        //Serial.println(millis() - StartZeit);
       }
       Serial.println("OK");
     }
@@ -92,8 +100,7 @@ void loop() {
 }
 
 
-void SetStepperProps(long movement_x, long movement_y)
-{
+void SetStepperProps(long movement_x, long movement_y) {
   // Calculate the distance each axis needs to move
   long distance_x = abs(movement_x - stepperx.currentPosition());
   long distance_y = abs(movement_y - steppery.currentPosition());
@@ -105,18 +112,15 @@ void SetStepperProps(long movement_x, long movement_y)
   long max_distance = max(distance_x, distance_y);
   // Calculate the ratio of distances to adjust acceleration
   float distance_ratio = (float)distance_x / (float)distance_y;
-  
+
   // Initialize acceleration values
   float accel_x = MAX_ACCEL;
   float accel_y = MAX_ACCEL_Y;
   // Adjust acceleration based on the ratio
-  if (distance_ratio > 1) 
-  {
+  if (distance_ratio > 1) {
     // X-axis needs more acceleration
     accel_y /= distance_ratio;
-  } 
-  else 
-  {
+  } else {
     // Y-axis needs more acceleration
     accel_x *= distance_ratio;
   }
@@ -125,7 +129,7 @@ void SetStepperProps(long movement_x, long movement_y)
   //Serial.print("Setting acceleration for Y axis: ");
   //Serial.println(accel_y);
 
-   // Calculate the speed for each axis to reach the target at the same time
+  // Calculate the speed for each axis to reach the target at the same time
   int speed_x = sqrt(2 * distance_x * accel_x);
   int speed_y = sqrt(2 * distance_y * accel_y);
 
@@ -139,7 +143,6 @@ void SetStepperProps(long movement_x, long movement_y)
   stepperx.setAcceleration(accel_x);
   steppery.setMaxSpeed(speed_y);
   steppery.setAcceleration(accel_y);
-  
 }
 
 void MoveToPosition(long movement_x, long movement_y) {
@@ -148,10 +151,10 @@ void MoveToPosition(long movement_x, long movement_y) {
   stepperx.moveTo(movement_x);
   steppery.moveTo(movement_y);
   // Keep running both motors until both have reached their target positions
-  while ( stepperx.isRunning() || steppery.isRunning()) {
-    
+  while (stepperx.isRunning() || steppery.isRunning()) {
+
     //Distance_to_position(movement_x, movement_y);
-    
+
     stepperx.run();
     steppery.run();
   }
@@ -162,11 +165,11 @@ void MoveToPosition(long movement_x, long movement_y) {
   //Serial.println("Final Y position: " + String(steppery.currentPosition()));
 }
 
-void Distance_to_position(long movement_x, long movement_y){
+void Distance_to_position(long movement_x, long movement_y) {
   long distance_toPos_x = abs(movement_x - stepperx.currentPosition());
   long distance_toPos_y = abs(movement_y - steppery.currentPosition());
-  
-  
+
+
   Serial.print("Distance for X axis: ");
   Serial.print("Distance for Y axis: ");
   Serial.println(distance_toPos_x);
