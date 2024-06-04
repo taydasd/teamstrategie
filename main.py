@@ -651,6 +651,10 @@ class MainWindow(QMainWindow):
             self.camera.start()
 
         # Check if new camera image is available
+
+        if self.camera.stopped:
+            self.camera.start()
+
         if self.camera.new_frame:
             frame = self.initializeCamera()
 
@@ -758,32 +762,34 @@ class MainWindow(QMainWindow):
                                     # frame = self.updatePostCalculationUi(frame)
                                     i += 1
 
+                            
+                            # Check if predicted puck position is valid 
+                            if 50 < self.predictedPoint[0] < (CAMERA_FRAME_HEIGHT - 50):
+                                # Calculate robot movement to the predicted puck position
+                               
+                                moveX, moveY = self.mapCoordinates(
+                                    self.predictedPoint[0],
+                                    self.predictedPoint[1],
+                                    CAMERA_FRAME_HEIGHT,
+                                    CAMERA_FRAME_ROBOT_MAX_Y,
+                                    TABLE_MAX_X,
+                                    TABLE_MAX_Y,
+                                )
+                                moveX = TABLE_MAX_X - moveX
+                               
                                 
-                                # Check if predicted puck position is valid 
-                                if 50 < self.predictedPoint[0] < (CAMERA_FRAME_HEIGHT - 50):
-                                    # Calculate robot movement to the predicted puck position
-                                
-                                    moveX, moveY = self.mapCoordinates(
-                                        self.predictedPoint[0],
-                                        self.predictedPoint[1],
-                                        CAMERA_FRAME_HEIGHT,
-                                        CAMERA_FRAME_ROBOT_MAX_Y,
-                                        TABLE_MAX_X,
-                                        TABLE_MAX_Y,
-                                    )
-                                    moveX = TABLE_MAX_X - moveX
-                                
-                                    
-                                    # If bot is activated move to the calculated position
-                                    if self.botActivated:
-                                        self.positionsSent += 1
-                                        self.sendMoveValues(int(moveX), int(moveY))
-                        except:
-                            pass
-                
-                # Executed if the puck isn't moving to the robot or didn't move to the robot in the previous update 
-                else:
-                    self.predictionMade = False
+                                # If bot is activated move to the calculated position
+                                if self.botActivated:
+                                    self.logTextbox.append(
+                                        f"Move To: X={moveX:.0f}, Y={moveY:.0f}")
+                                    self.positionsSent += 1
+                                    self.sendMoveValues(int(moveX), int(moveY))
+                    except:
+                        pass
+            
+            # Executed if the puck isn't moving to the robot or didn't move to the robot in the previous update 
+            else:
+                self.predictionMade = False
 
                     # Executed if the robot isn't in the goal
                     if not self.wentBackToGoal:
@@ -799,40 +805,42 @@ class MainWindow(QMainWindow):
                             TABLE_MAX_Y,
                         )
 
-                        # If bot is activated move to the calculated position
-                        if self.botActivated:
-                            self.sendMoveValues(int(moveX), int(moveY))
-                
-                # check if Puck is staying in own half
-                if(self.puckSpeed < 3 and self.currentRobotPosition[1] + 10 < self.currentPosition[1] < 185 and 40 < self.currentPosition[0] < 300):
-                    offsetX = 0
-                    if(self.currentPosition[0] < 100):
-                        offsetX = -10
-                    if(self.currentPosition[0] > 200):
-                        offsetX = 10
+                    # If bot is activated move to the calculated position
+                    if self.botActivated:
+                        self.sendMoveValues(int(moveX), int(moveY))
+            
+            # check if Puck is staying in own half
+            if(self.puckSpeed < 5 and self.currentRobotPosition[1] + 10 < self.currentPosition[1] < 185 and 40 < self.currentPosition[0] < 300):
+                offsetX = 0
+                if(self.currentPosition[0] < 100):
+                    offsetX = -10
+                if(self.currentPosition[0] > 200):
+                    offsetX = 10
+                moveX, moveY = self.mapCoordinates(
+                    self.currentPosition[0] + offsetX,
+                    self.currentPosition[1] + 10,
+                    CAMERA_FRAME_HEIGHT,
+                    CAMERA_FRAME_ROBOT_MAX_Y,
+                    TABLE_MAX_X,
+                    TABLE_MAX_Y,
+                )
+                moveX = TABLE_MAX_X - moveX
+                                
+                if self.botActivated:
+                    self.logTextbox.append(
+                        f"Move To: X={moveX:.0f}, Y={moveY:.0f}")
+                    self.positionsSent += 1
+                    self.sendMoveValues(int(moveX), int(moveY))
+            
+                    # Calculate robot movements to goal
                     moveX, moveY = self.mapCoordinates(
-                        self.currentPosition[0] + offsetX,
-                        self.currentPosition[1] + 10,
+                        (CAMERA_FRAME_HEIGHT / 2),
+                        DEFENSIVE_LINE,
                         CAMERA_FRAME_HEIGHT,
                         CAMERA_FRAME_ROBOT_MAX_Y,
                         TABLE_MAX_X,
                         TABLE_MAX_Y,
                     )
-                    moveX = TABLE_MAX_X - moveX
-                                    
-                    if self.botActivated:
-                        self.positionsSent += 1
-                        self.sendMoveValues(int(moveX), int(moveY))
-                
-                        # Calculate robot movements to goal
-                        moveX, moveY = self.mapCoordinates(
-                            (CAMERA_FRAME_HEIGHT / 2),
-                            DEFENSIVE_LINE,
-                            CAMERA_FRAME_HEIGHT,
-                            CAMERA_FRAME_ROBOT_MAX_Y,
-                            TABLE_MAX_X,
-                            TABLE_MAX_Y,
-                        )
 
                         # If bot is activated move to the calculated position
                         if self.botActivated:
