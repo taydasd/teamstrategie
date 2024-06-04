@@ -784,30 +784,30 @@ class MainWindow(QMainWindow):
                                         f"Move To: X={moveX:.0f}, Y={moveY:.0f}")
                                     self.positionsSent += 1
                                     self.sendMoveValues(int(moveX), int(moveY))
-                    except:
-                        pass
+                        except:
+                            pass
             
             # Executed if the puck isn't moving to the robot or didn't move to the robot in the previous update 
             else:
                 self.predictionMade = False
 
-                    # Executed if the robot isn't in the goal
-                    if not self.wentBackToGoal:
-                        self.wentBackToGoal = True
+                # Executed if the robot isn't in the goal
+                if not self.wentBackToGoal:
+                    self.wentBackToGoal = True
 
-                        # Calculate robot movements to goal
-                        moveX, moveY = self.mapCoordinates(
-                            (CAMERA_FRAME_HEIGHT / 2),
-                            DEFENSIVE_LINE,
-                            CAMERA_FRAME_HEIGHT,
-                            CAMERA_FRAME_ROBOT_MAX_Y,
-                            TABLE_MAX_X,
-                            TABLE_MAX_Y,
-                        )
+                    # Calculate robot movements to goal
+                    moveX, moveY = self.mapCoordinates(
+                        (CAMERA_FRAME_HEIGHT / 2),
+                        DEFENSIVE_LINE,
+                        CAMERA_FRAME_HEIGHT,
+                        CAMERA_FRAME_ROBOT_MAX_Y,
+                        TABLE_MAX_X,
+                        TABLE_MAX_Y,
+                    )
 
-                    # If bot is activated move to the calculated position
-                    if self.botActivated:
-                        self.sendMoveValues(int(moveX), int(moveY))
+                # If bot is activated move to the calculated position
+                if self.botActivated:
+                    self.sendMoveValues(int(moveX), int(moveY))
             
             # check if Puck is staying in own half
             if(self.puckSpeed < 5 and self.currentRobotPosition[1] + 10 < self.currentPosition[1] < 185 and 40 < self.currentPosition[0] < 300):
@@ -842,9 +842,9 @@ class MainWindow(QMainWindow):
                         TABLE_MAX_Y,
                     )
 
-                        # If bot is activated move to the calculated position
-                        if self.botActivated:
-                            self.sendMoveValues(int(moveX), int(moveY))
+                    # If bot is activated move to the calculated position
+                    if self.botActivated:
+                        self.sendMoveValues(int(moveX), int(moveY))
 
                 self.wasPuckGoingToRobot = self.isPuckGoingToRobot
                 self.puckWasGoingLeft = self.puckIsGoingLeft
