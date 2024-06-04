@@ -647,6 +647,10 @@ class MainWindow(QMainWindow):
         # Check if new camera image is available
         if self.camera.new_frame:
             frame = self.initializeCamera()
+
+            if frame == None:
+                return;
+
             x, y, radius, robotX, robotY, robotRadius = self.defineBoundaries(frame)
 
             # TODO: Robot detection is not that stable
@@ -960,41 +964,45 @@ class MainWindow(QMainWindow):
 
 
     def initializeCamera(self):
-        self.currentFrameTimestamp = datetime.now()
+        try:
+            self.currentFrameTimestamp = datetime.now()
 
-        # Current camera image
-        frame = self.camera.get_current_frame()
+            # Current camera image
+            frame = self.camera.get_current_frame()
 
-        # Check if corners of the camera image have been set
-        if self.cornersApplied:
-            # Input corners clockwise
-            selectedCorners = np.float32(
-                    [
-                        [self.croppedTableCoords[0][0],
-                         self.croppedTableCoords[0][1]],
-                        [self.croppedTableCoords[1][0],
-                         self.croppedTableCoords[1][1]],
-                        [self.croppedTableCoords[2][0],
-                         self.croppedTableCoords[2][1]],
-                        [self.croppedTableCoords[3][0],
-                         self.croppedTableCoords[3][1]],
-                    ]
-                )
+            # Check if corners of the camera image have been set
+            if self.cornersApplied:
+                # Input corners clockwise
+                selectedCorners = np.float32(
+                        [
+                            [self.croppedTableCoords[0][0],
+                            self.croppedTableCoords[0][1]],
+                            [self.croppedTableCoords[1][0],
+                            self.croppedTableCoords[1][1]],
+                            [self.croppedTableCoords[2][0],
+                            self.croppedTableCoords[2][1]],
+                            [self.croppedTableCoords[3][0],
+                            self.croppedTableCoords[3][1]],
+                        ]
+                    )
 
-            # Calculate transformation matrix (to apply a perspective transformation to the image)
-            matrix = cv2.getPerspectiveTransform(selectedCorners, self.originalCorners)
+                # Calculate transformation matrix (to apply a perspective transformation to the image)
+                matrix = cv2.getPerspectiveTransform(selectedCorners, self.originalCorners)
+                
+                # Apply perspective transformation
+                frame = cv2.warpPerspective(frame, matrix, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH))
             
-            # Apply perspective transformation
-            frame = cv2.warpPerspective(frame, matrix, (CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH))
-        
-        # Select corners of the camera image if they aren't set
-        if not self.cornersApplied:
-            for corner in self.croppedTableCoords:
-                cv2.circle(frame, (corner[0], corner[1]), 5, (255, 255, 255), 2)
+            # Select corners of the camera image if they aren't set
+            if not self.cornersApplied:
+                for corner in self.croppedTableCoords:
+                    cv2.circle(frame, (corner[0], corner[1]), 5, (255, 255, 255), 2)
 
-        self.frameCounter = self.frameCounter + 1
+            self.frameCounter = self.frameCounter + 1
 
-        return frame
+            return frame
+        except Exception as e:
+            print("Couldn't process frame!")
+            return None
     
     def mapCoordinates(
             self, x, y, maxWidthFrom, maxHeightFrom, maxWidthTo, maxHeightTo
