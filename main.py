@@ -648,8 +648,8 @@ class MainWindow(QMainWindow):
         if self.camera.new_frame:
             frame = self.initializeCamera()
 
-            if frame == None:
-                return;
+            if frame is None:
+                return
 
             x, y, radius, robotX, robotY, robotRadius = self.defineBoundaries(frame)
 
