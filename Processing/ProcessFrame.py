@@ -45,17 +45,19 @@ def processFrame(frame, sliders):
     if CAMERA_FRAME_HEIGHT > 700 or CAMERA_FRAME_WIDTH > 1200:
         resizeFrame = True
 
+    detectRobot = False
+
     ((x, y), radius), ((robotX, robotY), robotRadius) = detectPuckCustomizeable(
         filteredFrame=frame, 
         boundaries=[(lowerBoundary, upperBoundary, puckMinRadius, puckMaxRadius), (robotLowerBoundary, robotUpperBoundary, robotMinRadius, robotMaxRadius)], 
         resizeFrame=resizeFrame,
         useBlur=False,
         useUMat=False,
-        detectRobot=False
+        detectRobot=detectRobot
     )
 
     # If the robot is detected, save the data.
-    if robotX != -1 and robotY != -1 and robotRadius != -1:
+    if detectRobot and robotX != -1 and robotY != -1 and robotRadius != -1:
         lastRobotData = ((robotX, robotY), robotRadius)
     # If the robot is not detected, use the last known data.
     else:
@@ -66,14 +68,14 @@ def processFrame(frame, sliders):
         if lastRobotDetection >= CAMERA_ROBOT_DETECTION_FREQUENCY:
             lastRobotDetection = 0
 
-    print(f"Puck: {x:.0f},{y:.0f} Radius: {radius:.0f}")
-    print(f"Robot: {robotX:.0f},{robotY:.0f} Radius: {robotRadius:.0f}")
+    # print(f"Puck: {x:.0f},{y:.0f} Radius: {radius:.0f}")
+    # print(f"Robot: {robotX:.0f},{robotY:.0f} Radius: {robotRadius:.0f}")
 
     # Mark Puck
     if x != -1 and y != -1 and radius != -1:
         frame = markInFrame(frame, x, y, radius, FRAME_PUCK_OUTLINE_COLOR)
     # Mark robot
-    if robotX != -1 and robotY != -1 and robotRadius != -1:
+    if detectRobot and robotX != -1 and robotY != -1 and robotRadius != -1:
         frame = markInFrame(frame, robotX, robotY,
                             robotRadius, FRAME_ROBOT_OUTLINE_COLOR)
     frame = markRobotRectangle(frame)
