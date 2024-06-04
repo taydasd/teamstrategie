@@ -819,22 +819,20 @@ class MainWindow(QMainWindow):
                         f"Move To: X={moveX:.0f}, Y={moveY:.0f}")
                     self.positionsSent += 1
                     self.sendMoveValues(int(moveX), int(moveY))
-                    
+            
+                    # Calculate robot movements to goal
+                    moveX, moveY = self.mapCoordinates(
+                        (CAMERA_FRAME_HEIGHT / 2),
+                        DEFENSIVE_LINE,
+                        CAMERA_FRAME_HEIGHT,
+                        CAMERA_FRAME_ROBOT_MAX_Y,
+                        TABLE_MAX_X,
+                        TABLE_MAX_Y,
+                    )
 
-                    if(self.currentRobotPosition == self.currentPosition):
-                        # Calculate robot movements to goal
-                        moveX, moveY = self.mapCoordinates(
-                            (CAMERA_FRAME_HEIGHT / 2),
-                            DEFENSIVE_LINE,
-                            CAMERA_FRAME_HEIGHT,
-                            CAMERA_FRAME_ROBOT_MAX_Y,
-                            TABLE_MAX_X,
-                            TABLE_MAX_Y,
-                        )
-
-                        # If bot is activated move to the calculated position
-                        if self.botActivated:
-                            self.sendMoveValues(int(moveX), int(moveY))
+                    # If bot is activated move to the calculated position
+                    if self.botActivated:
+                        self.sendMoveValues(int(moveX), int(moveY))
 
             self.wasPuckGoingToRobot = self.isPuckGoingToRobot
             self.puckWasGoingLeft = self.puckIsGoingLeft

@@ -14,8 +14,8 @@ class Camera:
         self.url = camera_stream_url
         # Check if we are running on windows because then we need the CAP_DSHOW flag.
         if platform.system() == "Windows":
-            self.stream = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
-            # self.stream = cv2.VideoCapture(camera_stream_url)
+            #self.stream = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
+            self.stream = cv2.VideoCapture(camera_stream_url)
         else:
             # self.stream = cv2.VideoCapture(camera_index)
             self.stream = cv2.VideoCapture(camera_stream_url)
