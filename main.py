@@ -645,6 +645,10 @@ class MainWindow(QMainWindow):
             )
     def update(self):
         # Check if new camera image is available
+
+        if self.camera.stopped:
+            self.camera.start()
+
         if self.camera.new_frame:
             frame = self.initializeCamera()
 
@@ -1000,6 +1004,7 @@ class MainWindow(QMainWindow):
             return frame
         except Exception as e:
             print("Couldn't process frame!")
+            self.camera.stop()
             return None
     
     def mapCoordinates(
