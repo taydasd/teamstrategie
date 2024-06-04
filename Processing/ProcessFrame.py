@@ -45,15 +45,13 @@ def processFrame(frame, sliders):
     if CAMERA_FRAME_HEIGHT > 700 or CAMERA_FRAME_WIDTH > 1200:
         resizeFrame = True
 
-
-    # TODO: Maybe remove Robot tracking (make sure robot position is known by Arduino)
     ((x, y), radius), ((robotX, robotY), robotRadius) = detectPuckCustomizeable(
         filteredFrame=frame, 
         boundaries=[(lowerBoundary, upperBoundary, puckMinRadius, puckMaxRadius), (robotLowerBoundary, robotUpperBoundary, robotMinRadius, robotMaxRadius)], 
         resizeFrame=resizeFrame,
         useBlur=False,
         useUMat=False,
-        detectRobot=lastRobotDetection == 0
+        detectRobot=False
     )
 
     # If the robot is detected, save the data.
