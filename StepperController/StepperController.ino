@@ -90,11 +90,18 @@ void loop() {
 
         MoveToPosition(movement_x, movement_y);
         SetStepperSettings();
+        if(stepperx.currentPosition()== 942 && steppery.currentPosition() == 101)
+        {
+          Serial.print("HomePosition");
+        }
+        else
+        {
+          Serial.print("OK");
+        }
         //stepperx.runToNewPosition(movement_x);
         //steppery.runToNewPosition(movement_y);
         //Serial.println(millis() - StartZeit);
       }
-      Serial.println("OK");
     }
   }
 }
