@@ -4,8 +4,8 @@ let gameStopped = true;
 setInterval(() => {
     fetch("state").then((res) => res.json().then((json) => {
         const playerIncrement = json.playerScore - scoreSpieler.value;
-        const botIncrement    = json.botScore    - scoreRoboter.value;
-        const playerLead      = json.playerScore - json.botScore;
+        const botIncrement = json.botScore - scoreRoboter.value;
+        const playerLead = json.playerScore - json.botScore;
 
         if (playerIncrement > 0) {
             animation("blue");
@@ -58,14 +58,14 @@ function startTimer(duration) {
     let minutes, seconds;
     let intervalId;
 
-  intervalId = setInterval(function () {
-    minutes = parseInt(timer / 60, 10);
-    seconds = parseInt(timer % 60, 10);
+    intervalId = setInterval(function () {
+        minutes = parseInt(timer / 60, 10);
+        seconds = parseInt(timer % 60, 10);
 
-    minutes = minutes < 10 ? "0" + minutes : minutes;
-    seconds = seconds < 10 ? "0" + seconds : seconds;
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
 
-    countdown.value = minutes + ":" + seconds;
+        countdown.value = minutes + ":" + seconds;
 
         if (--timer < 0) {
             timer = duration;
@@ -79,7 +79,7 @@ function startTimer(duration) {
 
 function playGIF(gifName) {
     const gifElement = document.getElementById('score-gif');
-    const scoreboard = document.getElementById('scoreboard');
+    const gifDisplay = document.getElementById('gifDisplay');
 
     if (gifName === 'pulp') {
         gifElement.src = 'resources/gifs/pulp.gif';
@@ -91,10 +91,10 @@ function playGIF(gifName) {
         gifElement.src = 'resources/gifs/dominance.gif';
     }
 
-    scoreboard.style.display = 'block';
+    gifDisplay.style.display = 'block';
 
     setTimeout(() => {
-        scoreboard.style.display = 'none';
+        gifDisplay.style.display = 'none';
     }, 3000);
 };
 
