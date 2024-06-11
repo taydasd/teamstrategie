@@ -100,7 +100,6 @@ class MainWindow(QMainWindow):
         self.moveForward = True
         self.lastRobotPosition = (0, 0)
         self.currentRobotPosition = (0, 0)
-        self.robotSpeed = 0
         self.puckSpeed = 0
         self.robotIsStopped = True
         self.robotWasStopped = True
@@ -188,12 +187,10 @@ class MainWindow(QMainWindow):
         self.robotXLabel = QLabel(text="X: 0")
         self.robotYLabel = QLabel(text="Y: 0")
         self.robotRadiusLabel = QLabel(text="Radius: 0")
-        self.robotSpeedLabel = QLabel(text="Speed: 0")
         self.robotValuesHBox.addWidget(QLabel(text="Robot Values: "))
         self.robotValuesHBox.addWidget(self.robotXLabel)
         self.robotValuesHBox.addWidget(self.robotYLabel)
         self.robotValuesHBox.addWidget(self.robotRadiusLabel)
-        self.robotValuesHBox.addWidget(self.robotSpeedLabel)
         # Corner setting.
         self.cornersHBox = QHBoxLayout()
         self.cornersApplyButton = QPushButton("Apply Corners", self)
@@ -589,7 +586,6 @@ class MainWindow(QMainWindow):
 
     def sendMoveValues(self, x, y):
         # Do scaling.
-        # y -= 50
         self.logTextbox.append(f"Move To: X={x:.0f}, Y={y:.0f}")
 
         if abs(x - self.lastMovePosition[0]) < 50 and abs(y - self.lastMovePosition[1]) < 50:
@@ -597,10 +593,13 @@ class MainWindow(QMainWindow):
 
         self.lastMovePosition = (x, y)
 
+        # self.currentRobotPosition = (x, y)
+
         # if self.botActivated:
         self.positionsSent += 1
         # print(f"Sending {self.positionsSent} (X:{int(x)}, Y:{int(y)})")
         response = self.stepperController.move_to_position(x, y)
+        print(f'{x},{y}')
         print(response)
 
     def calibrate(self):
@@ -654,7 +653,7 @@ class MainWindow(QMainWindow):
             frame = self.initializeCamera()
 
             if frame is not None:
-                x, y, radius, robotX, robotY, robotRadius = self.defineBoundaries(frame)
+                x, y, radius, robotX, robotY, robotRadius = processFrame(frame, self)
 
                 # TODO: Robot detection is not that stable
                 # Check detected robot radius (if robot was not recognised correctly set invalid values)
@@ -662,7 +661,6 @@ class MainWindow(QMainWindow):
                     robotX = -1
                     robotY = -1
                     robotRadius = -1
-                    self.robotSpeed = -1
 
                 self.currentPosition = (x, y)
                 self.currentRobotPosition = (robotX, robotY)
@@ -670,9 +668,6 @@ class MainWindow(QMainWindow):
                 # Calculate robot and puck speed
                 self.puckSpeed = math.sqrt((self.currentPosition[0] - self.lastPosition[0]) ** 2 + (
                         self.currentPosition[1] - self.lastPosition[1]) ** 2)
-                self.robotSpeed = math.sqrt((self.currentRobotPosition[0] - self.lastRobotPosition[0]) ** 2 + (
-                        self.currentRobotPosition[1] - self.lastRobotPosition[1]) ** 2)
-                self.robotIsStopped = self.robotSpeed <= 1 or self.robotSpeed == -1
                 
                 frame = self.updatePreCalculationUi(frame, x, y, radius, robotX, robotY, robotRadius)
 
@@ -710,7 +705,7 @@ class MainWindow(QMainWindow):
                         try:
                             if self.predictionLine.get_m() is not None:
                                 loopCounter = 0
-                                while i < 5:
+                                while loopCounter < 5:
                                     # Check if puck collides with a wall
                                     if self.predictionLine.get_angle() >= 0:  # left edge
                                         self.collisionPoint = (
@@ -775,8 +770,6 @@ class MainWindow(QMainWindow):
                                     
                                     # If bot is activated move to the calculated position
                                     if self.botActivated:
-                                        self.logTextbox.append(
-                                            f"Move To: X={moveX:.0f}, Y={moveY:.0f}")
                                         self.positionsSent += 1
                                         self.sendMoveValues(int(moveX), int(moveY))
                         except:
@@ -805,7 +798,7 @@ class MainWindow(QMainWindow):
                             self.sendMoveValues(int(moveX), int(moveY))
                 
                 # check if Puck is staying in own half
-                if(self.puckSpeed < 3 and self.currentRobotPosition[1] + 10 < self.currentPosition[1] < 185 and 40 < self.currentPosition[0] < 360):
+                if(self.puckSpeed < 3 and self.currentRobotPosition[1] + 10 < self.currentPosition[1] < 150 and GORIGHT_MAX < self.currentPosition[0] < GOLEFT_MAX):
                     offsetX = 0
                     if(self.currentPosition[0] < 100):
                         offsetX = -10
@@ -928,42 +921,8 @@ class MainWindow(QMainWindow):
         self.robotXLabel.setText(str(f"X: {robotX:.0f}"))
         self.robotYLabel.setText(str(f"Y: {robotY:.0f}"))
         self.robotRadiusLabel.setText(str(f"Radius: {robotRadius:.0f}"))
-        self.robotSpeedLabel.setText(str(f"Speed: {self.robotSpeed:.1f}"))
 
         return frame
-
-
-    def defineBoundaries(self, frame):
-        # Lower and upper color spectrum for the puck
-        lowerBoundary = np.array([
-                self.lowerHueSlider.value(),
-                self.lowerSaturationSlider.value(),
-                self.lowerValueSlider.value(),
-            ])
-        upperBoundary = np.array([
-                self.upperHueSlider.value(),
-                self.upperSaturationSlider.value(),
-                self.upperValueSlider.value(),
-            ])
-        
-        # TODO: Improve robot detection 
-        # Lower and upper color spectrum for the robot 
-        robotLowerBoundary = np.array([
-                self.lowerHueRobotSlider.value(),
-                self.lowerSaturationRobotSlider.value(),
-                self.lowerValueRobotSlider.value(),
-            ])
-        robotUpperBoundary = np.array([
-                self.upperHueRobotSlider.value(),
-                self.upperSaturationRobotSlider.value(),
-                self.upperValueRobotSlider.value(),
-            ])
-        
-        # Detect the puck/robot in the camera image
-        x, y, radius, robotX, robotY, robotRadius = processFrame(frame, self)
-        
-        return x,y,radius,robotX,robotY,robotRadius
-
 
     def initializeCamera(self):
         try:
