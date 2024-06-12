@@ -13,7 +13,11 @@ setInterval(() => {
                 playGIF('losingteeth');
                 goalAudio.src = 'resources/sounds/godlike.wav';
                 goalAudio.play();
-            } else if (playerLead > 4) {
+            } else if (playerLead == 4) {
+                playGIF('dog');
+                goalAudio.src = 'resources/sounds/godlike.wav';
+                goalAudio.play();
+            } else if (playerLead > 5) {
                 playGIF('dominance');
                 goalAudio.src = 'resources/sounds/dominating.wav';
                 goalAudio.play();
@@ -25,7 +29,11 @@ setInterval(() => {
                 playGIF('pulp');
                 goalAudio.src = 'resources/sounds/unstoppable.wav';
                 goalAudio.play();
-            } else if (playerLead < -4) {
+            } else if (playerLead == -4) {
+                playGIF('pengu');
+                goalAudio.src = 'resources/sounds/unstoppable.wav';
+                goalAudio.play();
+            } else if (playerLead < -5) {
                 playGIF('godzilla');
                 goalAudio.src = 'resources/sounds/rampage.wav';
                 goalAudio.play();
@@ -81,15 +89,7 @@ function playGIF(gifName) {
     const gifElement = document.getElementById('score-gif');
     const gifDisplay = document.getElementById('gifDisplay');
 
-    if (gifName === 'pulp') {
-        gifElement.src = 'resources/gifs/pulp.gif';
-    } else if (gifName === 'losingteeth') {
-        gifElement.src = 'resources/gifs/losingteeth.gif';
-    } else if (gifName === 'godzilla') {
-        gifElement.src = 'resources/gifs/godzilla.gif';
-    } else if (gifName === 'dominance') {
-        gifElement.src = 'resources/gifs/dominance.gif';
-    }
+    gifElement.src = 'resources/gifs/' + gifName + '.gif';
 
     gifDisplay.style.display = 'block';
 
