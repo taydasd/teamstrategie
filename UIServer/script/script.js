@@ -95,6 +95,7 @@ function playGIF(gifName) {
 
     setTimeout(() => {
         gifDisplay.style.display = 'none';
+        gifElement.src = '';
     }, 3000);
 };
 
