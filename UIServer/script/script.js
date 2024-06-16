@@ -34,6 +34,7 @@ setInterval(() => {
         }
         if (botIncrement > 0) {
             animation("red");
+            
             if (playerLead == -2)
                 playGoalAnimation('pulp', 'resources/sounds/unstoppable.wav');
             else if (playerLead == -4)
