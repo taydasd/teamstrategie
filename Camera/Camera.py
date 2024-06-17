@@ -35,6 +35,7 @@ class Camera:
         self.new_frame = False
 
     def start(self):
+        self.stopped = False
         Thread(target=self.get_next_frame, args=()).start()
         return self
 

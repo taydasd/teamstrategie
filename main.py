@@ -597,9 +597,13 @@ class MainWindow(QMainWindow):
         # Add your calibration code here
         if self.stepperController is not None:
             self.logTextbox.append("Calibrating...")
-            self.moveWorker.set_values(MoveType.CALIBRATE, 0, 0)
+            self.stepperController.calibrate()
+            # self.moveWorker.set_values(MoveType.CALIBRATE, 0, 0)
             self.isAtZero = True
-            self.sendMoveValues((TABLE_MAX_X / 2), 200, "Calibration")
+            time.sleep(3)
+            self.logTextbox.append("Move home")
+            self.stepperController.move_to_position(942, 101)
+            # self.sendMoveValues((TABLE_MAX_X / 2), DEFENSIVE_LINE, "Calibration")
         else:
             self.logTextbox.append(
                 "ERROR: Cannot calibrate. No Arduino found on " + STEPPER_COM_PORT + "."
@@ -638,7 +642,16 @@ class MainWindow(QMainWindow):
         # Check if new camera image is available
 
         if self.camera.stopped:
-            self.camera.start()
+            print("Warning: Kamera neustarten...")
+            self.camera = Camera(
+                CAMERA_INDEX,
+                CAMERA_FRAME_WIDTH,
+                CAMERA_FRAME_HEIGHT,
+                CAMERA_FOCUS,
+                CAMERA_BUFFERSIZE,
+                CAMERA_FRAMERATE,
+                CAMERA_STREAM_URL,
+            ).start()
 
         if self.camera.new_frame:
             frame = self.initializeCamera()
@@ -705,7 +718,7 @@ class MainWindow(QMainWindow):
                         self.savedPoint = self.currentPosition
 
                         try:
-                            if self.predictionLine.get_m() is not None:
+                            if self.predictionLine.get_m() is not None and self.currentPosition[1] < 550 and self.puckSpeed > 4:
                                 loopCounter = 0
                                 while loopCounter < 5:
                                     # Check if puck collides with a wall
@@ -773,7 +786,7 @@ class MainWindow(QMainWindow):
                                                 DEFENSIVE_LINE + GOFORWARD_MAX
                                             )
                                             < GORIGHT_MAX
-                                            and self.puckSpeed < 20
+                                            and self.puckSpeed < 15
                                         ):
                                             self.predictedPoint = (
                                                 self.predictionLine.get_x(
@@ -852,6 +865,7 @@ class MainWindow(QMainWindow):
                 if (
                     self.puckSpeed < 3
                     and GOLEFT_MAX < self.currentPosition[0] < GORIGHT_MAX
+                    and self.currentPosition[1] < GOFORWARD_MAX
                 ):
                     offsetX = 0
                     if self.currentPosition[0] < 120:
@@ -872,7 +886,7 @@ class MainWindow(QMainWindow):
                         self.positionsSent += 1
                         self.sendMoveValues(int(moveX), int(moveY), "Playing Back")
 
-                    # time.sleep(0.2)
+                    time.sleep(0.2)
                     # Calculate robot movements to goal
                     moveX, moveY = self.mapCoordinates(
                         (CAMERA_FRAME_HEIGHT / 2),
@@ -1041,6 +1055,7 @@ class MainWindow(QMainWindow):
             return frame
         except Exception as e:
             print("Couldn't process frame!")
+            print(e)
             self.camera.stop()
             return None
 
