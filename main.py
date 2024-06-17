@@ -773,7 +773,7 @@ class MainWindow(QMainWindow):
                                                 DEFENSIVE_LINE + GOFORWARD_MAX
                                             )
                                             < GORIGHT_MAX
-                                            and self.puckSpeed < 6
+                                            and self.puckSpeed < 20
                                         ):
                                             self.predictedPoint = (
                                                 self.predictionLine.get_x(
@@ -851,13 +851,12 @@ class MainWindow(QMainWindow):
                 # check if Puck is staying in own half
                 if (
                     self.puckSpeed < 3
-                    and self.currentPosition[1] < DEFENSIVE_LINE + 10 < 150
                     and GOLEFT_MAX < self.currentPosition[0] < GORIGHT_MAX
                 ):
                     offsetX = 0
-                    if self.currentPosition[0] < 100:
+                    if self.currentPosition[0] < 120:
                         offsetX = -20
-                    if self.currentPosition[0] > 300:
+                    if self.currentPosition[0] > 280:
                         offsetX = 20
                     moveX, moveY = self.mapCoordinates(
                         self.currentPosition[0] + offsetX,
