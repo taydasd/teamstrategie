@@ -46,7 +46,7 @@ class Camera:
 
     def start(self):
         self.stopped = False
-        Thread(target=self.get_next_frame, args=()).start()
+        Thread(target=self.get_next_frame_new, args=()).start()
         return self
 
     def get_current_frame(self):
@@ -75,6 +75,29 @@ class Camera:
                     print("Error reading frame:", e)
             elapsed_time = time.time() - start_time
             time.sleep(max(0, frame_time - elapsed_time))
+
+    def get_next_frame_new(self):
+         while not self.stopped:
+            if not self.grabbed:
+                self.stop()
+            else:
+                try:
+                    (self.grabbed, tmp_frame) = self.stream.read() 
+                    tmp_frame = cv2.rotate(tmp_frame, rotateCode=cv2.ROTATE_90_CLOCKWISE)
+                    self.frame = tmp_frame
+                    self.new_frame = True
+                except Exception as e:
+                    print("Error reading frame:", e)
+
+    def get_next_frame_blocking(self):
+        #Wait for the next frame from the stream. This blocks until a new frame arrives. Does timeout after about 30 seconds
+        (self.grabbed, tmp_frame) = self.stream.read()
+        
+        #Stop camera if no frame got captured
+        if(not self.grabbed):
+            self.stop()
+
+        return tmp_frame
 
     def stop(self):
         self.stopped = True
