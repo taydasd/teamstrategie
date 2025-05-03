@@ -129,6 +129,9 @@ class MainWindow(QMainWindow):
         self.testTime = datetime.now()
         self.currentFrameTimestamp = datetime.now()
         self.lastFrameTimestamp = datetime.now()
+        self.frameTimeCount =0
+        self.frameTimeSum=0
+        self.frameTimes = deque(maxlen=100)
 
     def setupUI(self):
         # Create a label to display the camera image.
@@ -909,7 +912,7 @@ class MainWindow(QMainWindow):
                 self.robotWasStopped = self.robotIsStopped
 
                 frame = self.updatePostCalculationUi(frame)
-                frame = self.updateFrameTime
+                self.updateFrameTime()
 
     def updatePostCalculationUi(self, frame):
         if self.predictionMade and self.predictionLine.get_m() is not None:
@@ -995,13 +998,16 @@ class MainWindow(QMainWindow):
         return frame
 
     def updateFrameTime(self):
-        # Calculate frame time and FPS
-        frameTimeMs = (
-            self.currentFrameTimestamp - self.lastFrameTimestamp
-        ).microseconds / 1000
+        # Calculate average frame time and FPS from the last 100 frames
+        frameTimeMs = (self.currentFrameTimestamp - self.lastFrameTimestamp).microseconds / 1000
         self.lastFrameTimestamp = self.currentFrameTimestamp
-        fps = 1000 / frameTimeMs
-        self.frameTimeLabel.setText(f"Frame Time: {frameTimeMs:.0f}ms ({fps:.0f} FPS)")
+        
+        self.frameTimes.append(frameTimeMs)
+        average = sum(self.frameTimes) / len(self.frameTimes)
+        fps = 1000 / average if average > 0 else 0
+
+        #Update the frame time and FPS in the UI
+        self.frameTimeLabel.setText(f"Frame Time: {average:.2f}ms ({fps:.0f} FPS)")
 
     def updatePreCalculationUi(self, frame, x, y, radius, robotX, robotY, robotRadius):
         # Update puck and robot values in the UI
