@@ -82,3 +82,20 @@ class Camera:
 
     def __del__(self):
         self.stream.release()
+
+        
+# with this algorithm the user does not have to set 
+# the corner points in a specific order
+def order_points(pts):
+    pts = np.array(pts, dtype="float32")
+    rect = np.zeros((4,2), dtype="float32")
+
+    s = pts.sum(axis= 1)
+    rect[0] = pts[np.argmin(s)] #Top-left
+    rect[2] = pts[np.argmax(s)] #Bottom-right
+
+    diff = np.diff(pts, axis=1)
+    rect[1] = pts[np.argmin(diff)] #Top-left
+    rect[3] = pts[np.argmax(diff)] #Bottom-left
+
+    return rect

@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import (
 )
 from Constants import *
 from Camera import Camera
+from Camera.Camera import order_points
 from StepperController import *
 from Processing.ProcessFrame import processFrame
 from Processing.Line import Line
@@ -1024,16 +1025,18 @@ class MainWindow(QMainWindow):
             frame = self.camera.get_current_frame()
 
             # Check if corners of the camera image have been set
-            if self.cornersApplied:
+            if self.cornersApplied and len(self.croppedTableCoords) == 4:
                 # Input corners clockwise
-                selectedCorners = np.float32(
-                    [
-                        [self.croppedTableCoords[0][0], self.croppedTableCoords[0][1]],
-                        [self.croppedTableCoords[1][0], self.croppedTableCoords[1][1]],
-                        [self.croppedTableCoords[2][0], self.croppedTableCoords[2][1]],
-                        [self.croppedTableCoords[3][0], self.croppedTableCoords[3][1]],
-                    ]
-                )
+                #selectedCorners = np.float32(
+                    #[
+                       # [self.croppedTableCoords[0][0], self.croppedTableCoords[0][1]],
+                       # [self.croppedTableCoords[1][0], self.croppedTableCoords[1][1]],
+                        #[self.croppedTableCoords[2][0], self.croppedTableCoords[2][1]],
+                        #[self.croppedTableCoords[3][0], self.croppedTableCoords[3][1]],
+                    #]
+                #)
+                #automatic sorting
+                selectedCorners = order_points(self.croppedTableCoords)
 
                 # Calculate transformation matrix (to apply a perspective transformation to the image)
                 matrix = cv2.getPerspectiveTransform(
