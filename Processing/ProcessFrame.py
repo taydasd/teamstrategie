@@ -44,7 +44,7 @@ def processFrame(frame, sliders):
     if CAMERA_FRAME_HEIGHT > 700 or CAMERA_FRAME_WIDTH > 1200:
         resizeFrame = True
 
-    detectRobot = False
+    detectRobot = True
 
     ((x, y), radius), ((robotX, robotY), robotRadius) = detectPuckCustomizeable(
         filteredFrame=frame, 
@@ -54,7 +54,9 @@ def processFrame(frame, sliders):
         useUMat=False,
         detectRobot=detectRobot
     )
-
+    #print(int(robotX),"       ",int(robotY)) #Ben
+    
+    
     # If the robot is detected, save the data.
     if detectRobot and robotX != -1 and robotY != -1 and robotRadius != -1:
         lastRobotData = ((robotX, robotY), robotRadius)
@@ -66,9 +68,8 @@ def processFrame(frame, sliders):
         lastRobotDetection = lastRobotDetection + 1
         if lastRobotDetection >= CAMERA_ROBOT_DETECTION_FREQUENCY:
             lastRobotDetection = 0
-
-    # print(f"Puck: {x:.0f},{y:.0f} Radius: {radius:.0f}")
-    # print(f"Robot: {robotX:.0f},{robotY:.0f} Radius: {robotRadius:.0f}")
+    
+    print(f"Robot: {robotX:.0f},{robotY:.0f} Radius: {robotRadius:.0f}")
 
     # Mark Puck
     if x != -1 and y != -1 and radius != -1:
@@ -96,7 +97,16 @@ def detectPuckCustomizeable(filteredFrame, boundaries, resizeFrame=False, useBlu
     results = []
     for i, (lowerBoundary, upperBoundary, minRadius, maxRadius) in enumerate(boundaries):
         mask = cv2.inRange(hsv, lowerBoundary, upperBoundary)
-
+        
+        
+        
+        
+        #Ben Extra Fenster von Gefiltertem Bild 
+        if i == 1:  # Roboter
+            cv2.imshow("Roboter-Maske", mask)
+            
+            
+            
         # i == 1 -> Robot Detection
         if i == 1:
             if not detectRobot:
@@ -108,6 +118,13 @@ def detectPuckCustomizeable(filteredFrame, boundaries, resizeFrame=False, useBlu
             if not useUMat:
                 mask[mask.shape[0]//2:, :] = 0
 
+            #Rand für Robot Detection, dass der Roboter nicht fehlerhaft am Rand erkannt wird
+                mask[:, :100] = 0       # linker Rand
+                mask[:, -100:] = 0      # rechter Rand
+                mask[:20, :] = 0        # oberer Rand
+
+            
+            
         usedMask = None
         if useBlur:
             # Blur Mask
@@ -116,10 +133,21 @@ def detectPuckCustomizeable(filteredFrame, boundaries, resizeFrame=False, useBlu
             usedMask = mask
         contours, hierarchy = cv2.findContours(usedMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+        
         for cnt in contours:
             (x, y), radius = cv2.minEnclosingCircle(cnt)
+            
+            #Ben Test mindestfläche
+            area = cv2.contourArea(cnt)
+            if area < 450:  # Fläche in Pixeln (450 ist ein recht guter Wert aber kann noch besser werden)
+                continue
+            #Ben Test zuende
+            
+            
+            #alte Version mit Roboter Radius unterschiedlich
             if minRadius <= radius <= maxRadius:
                 results.append(((x, y), radius))
+                #results.append(((x, y), 25)) #Ben - hier ist radius =25 von Roboter und Puck
                 break
         else:
             results.append(((-1, -1), -1))
