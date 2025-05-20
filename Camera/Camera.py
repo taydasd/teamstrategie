@@ -5,6 +5,7 @@ import platform
 import numpy as np
 import requests
 from io import BytesIO
+from PyQt5.QtCore import Qt
 
 class Camera:
     def __init__(
@@ -99,3 +100,14 @@ def order_points(pts):
     rect[3] = pts[np.argmax(diff)] #Bottom-left
 
     return rect
+#The user can remove a corner with 'r'
+#Are the Corners Applied and th user presses 'r' las orner gets removed 
+#and the user has to apply all the corners agai
+def keyPressEvent(self, event):
+        if event.key() == Qt.Key_R:
+            if self.croppedTableCoords:
+                removed = self.croppedTableCoords.pop()
+                print(f"Removed last corner: {removed}")
+                # Optional: Bild neu zeichnen
+                frame = self.initializeCamera()
+                self.updateImageFromFrame(self.cameraImageLabel, frame)
