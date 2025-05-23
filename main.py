@@ -538,7 +538,7 @@ class MainWindow(QMainWindow):
     def applyCorners(self):
         if len(self.croppedTableCoords) == 4:
             self.logTextbox.append(
-                "Applied corners. Fitting image. If the image does not look right then reset the corners. Start at the top left and then go clock wise."
+                "Applied corners. Fitting image. If the image does not look right then reset the corners. Made a mistake press 'r' to reset last corner"
             )
             self.cornersApplied = True
         else:
