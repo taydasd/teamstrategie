@@ -920,14 +920,14 @@ class MainWindow(QMainWindow):
                 cv2.circle(
                     frame,
                     (int(self.predictedPoint[0]), int(self.predictedPoint[1])),
-                    5,
+                    10,
                     (255, 0, 255),
                     -1,
                 )
                 cv2.circle(
                     frame,
                     (int(self.savedPoint[0]), int(self.savedPoint[1])),
-                    5,
+                    10,
                     (0, 0, 0),
                     -1,
                 )
