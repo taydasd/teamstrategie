@@ -25,10 +25,10 @@ from PyQt5.QtWidgets import (
 )
 from Constants import *
 from Camera import Camera
+from Camera.Camera import order_points, keyPressEvent
 from StepperController import *
 from Processing.ProcessFrame import processFrame
 from Processing.Line import Line
-
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -129,6 +129,7 @@ class MainWindow(QMainWindow):
         self.testTime = datetime.now()
         self.currentFrameTimestamp = datetime.now()
         self.lastFrameTimestamp = datetime.now()
+        self.setFocusPolicy(Qt.StrongFocus)
 
     def setupUI(self):
         # Create a label to display the camera image.
@@ -516,7 +517,8 @@ class MainWindow(QMainWindow):
         self.filterVbox.addLayout(self.upperValueHbox)
         self.filterVbox.addLayout(self.lowerPuckRadiusBox)
         self.filterVbox.addLayout(self.upperPuckRadiusBox)
-
+    def keyPressEvent(self, event):
+        keyPressEvent(self, event)
     def closeEvent(self, event):
         # Let the window close.
         event.accept()
@@ -536,7 +538,7 @@ class MainWindow(QMainWindow):
     def applyCorners(self):
         if len(self.croppedTableCoords) == 4:
             self.logTextbox.append(
-                "Applied corners. Fitting image. If the image does not look right then reset the corners. Start at the top left and then go clock wise."
+                "Applied corners. Fitting image. If the image does not look right then reset the corners. Made a mistake press 'r' to reset last corner"
             )
             self.cornersApplied = True
         else:
@@ -574,7 +576,7 @@ class MainWindow(QMainWindow):
             )
             self.sendMoveValues(moveX, moveY)
 
-    def sendMoveValues(self, x, y, type):
+    def sendMoveValues(self, x, y, type = None):
         # Do scaling.
         self.logTextbox.append(f"Move To: X={x:.0f}, Y={y:.0f}, \t\tMove Type: {type}")
 
@@ -1015,7 +1017,7 @@ class MainWindow(QMainWindow):
         self.robotRadiusLabel.setText(str(f"Radius: {robotRadius:.0f}"))
 
         return frame
-
+   
     def initializeCamera(self):
         try:
             self.currentFrameTimestamp = datetime.now()
@@ -1024,16 +1026,10 @@ class MainWindow(QMainWindow):
             frame = self.camera.get_current_frame()
 
             # Check if corners of the camera image have been set
-            if self.cornersApplied:
-                # Input corners clockwise
-                selectedCorners = np.float32(
-                    [
-                        [self.croppedTableCoords[0][0], self.croppedTableCoords[0][1]],
-                        [self.croppedTableCoords[1][0], self.croppedTableCoords[1][1]],
-                        [self.croppedTableCoords[2][0], self.croppedTableCoords[2][1]],
-                        [self.croppedTableCoords[3][0], self.croppedTableCoords[3][1]],
-                    ]
-                )
+            if self.cornersApplied and len(self.croppedTableCoords) == 4:
+                #automatic sorting
+                #the method order_points is calles to order the corner setting of the user
+                selectedCorners = order_points(self.croppedTableCoords)
 
                 # Calculate transformation matrix (to apply a perspective transformation to the image)
                 matrix = cv2.getPerspectiveTransform(
