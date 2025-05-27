@@ -127,11 +127,9 @@ class MainWindow(QMainWindow):
         self.wentBackToGoal = False
         self.attacked = False
         self.testTime = datetime.now()
-        self.currentFrameTimestamp = datetime.now()
-        self.lastFrameTimestamp = datetime.now()
-        self.frameTimeCount =0
-        self.frameTimeSum=0
-        self.frameTimes = deque(maxlen=100)
+        self.timestamp_to_measure_processed_frames = datetime.now()
+        self.last_timestamp_to_measure_processed_frames = datetime.now()
+        self.frame_processing_times = deque(maxlen=100)
         self.setFocusPolicy(Qt.StrongFocus)
 
     def setupUI(self):
@@ -659,7 +657,7 @@ class MainWindow(QMainWindow):
             ).start()
 
         if self.camera.new_frame:
-            frame = self.initializeCamera()
+            frame, frame_timestamp = self.initializeCamera()
 
             if frame is not None:
                 x, y, radius, robotX, robotY, robotRadius = processFrame(frame, self)
@@ -1001,11 +999,11 @@ class MainWindow(QMainWindow):
 
     def updateFrameTime(self):
         # Calculate average frame time and FPS from the last 100 frames
-        frameTimeMs = (self.currentFrameTimestamp - self.lastFrameTimestamp).microseconds / 1000
-        self.lastFrameTimestamp = self.currentFrameTimestamp
+        frameTimeMs = (self.timestamp_to_measure_processed_frames - self.last_timestamp_to_measure_processed_frames).microseconds / 1000
+        self.last_timestamp_to_measure_processed_frames = self.timestamp_to_measure_processed_frames
         
-        self.frameTimes.append(frameTimeMs)
-        average = sum(self.frameTimes) / len(self.frameTimes)
+        self.frame_processing_times.append(frameTimeMs)
+        average = sum(self.frame_processing_times) / len(self.frame_processing_times)
         fps = 1000 / average if average > 0 else 0
 
         #Update the frame time and FPS in the UI
@@ -1026,10 +1024,10 @@ class MainWindow(QMainWindow):
    
     def initializeCamera(self):
         try:
-            self.currentFrameTimestamp = datetime.now()
+            self.timestamp_to_measure_processed_frames = datetime.now()
 
-            # Current camera image
-            frame = self.camera.get_current_frame()
+            # Current camera image with matching Timestamp
+            frame, frame_timestamp = self.camera.get_current_frame_with_timestamp()
 
             # Check if corners of the camera image have been set
             if self.cornersApplied and len(self.croppedTableCoords) == 4:
@@ -1054,7 +1052,7 @@ class MainWindow(QMainWindow):
 
             self.frameCounter = self.frameCounter + 1
 
-            return frame
+            return frame, frame_timestamp
         except Exception as e:
             print("Couldn't process frame!")
             print(e)
