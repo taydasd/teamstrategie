@@ -158,7 +158,7 @@ class RobotController:
                         if (
                             self.data.predictionLine.get_angle() >= 0
                         ):  # left edge
-                            self.collisionPoint = (
+                            self.data.collisionPoint = (
                                 0 + (radius / 2),
                                 self.data.predictionLine.get_y(0 + (radius / 2)),
                             )
