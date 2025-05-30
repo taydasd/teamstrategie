@@ -71,5 +71,9 @@ class DataModel:
         self.testTime = datetime.now()
         self.currentFrameTimestamp = datetime.now()
         self.lastFrameTimestamp = datetime.now()
+        self.frameTimeCount =0
+        self.frameTimeSum=0
+        self.frameTimes = deque(maxlen=100)
+        self.setFocusPolicy(Qt.StrongFocus)
 
 model = DataModel()

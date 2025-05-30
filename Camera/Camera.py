@@ -5,6 +5,7 @@ import platform
 import numpy as np
 import requests
 from io import BytesIO
+from PyQt5.QtCore import Qt
 
 class Camera:
     def __init__(
@@ -46,7 +47,10 @@ class Camera:
 
     def start(self):
         self.stopped = False
-        Thread(target=self.get_next_frame, args=()).start()
+        if(self.url != "virtual"):
+            Thread(target=self.get_next_frame, args=()).start()
+        else:
+            Thread(target=self.get_next_frame_at_desired_rate, args=()).start() # Use framerate control so the pre-recorded video for the virtual cam doesnt run as quick as possible
         return self
 
     def get_current_frame(self):
@@ -54,27 +58,46 @@ class Camera:
         return self.frame
 
     def get_next_frame(self):
-        fps = self.fps  # Desired frame rate
-        frame_time = 1 / fps
-        while not self.stopped:
-            start_time = time.time()
+         while not self.stopped:
             if not self.grabbed:
                 self.stop()
             else:
                 try:
-                    (self.grabbed, tmp_frame) = self.stream.read()
-                    #self.videoWriter.write(tmp_frame) 
-                    tmp_frame = cv2.rotate(
-                        tmp_frame, rotateCode=cv2.ROTATE_90_CLOCKWISE)
-                    #tmp_frame = cv2.flip(tmp_frame, 1)  # Flip horizontally
-                    # Flip again to mirror so the bot starts in the top right corner.
-                    #tmp_frame = cv2.flip(tmp_frame, 1)
+                    (self.grabbed, tmp_frame) = self.stream.read() # Read a new frame from the stream. This blocks until a new frame arrives from the Pi stream, so the loop syncs with the fps of the cam naturally.
+                    tmp_frame = cv2.rotate(tmp_frame, rotateCode=cv2.ROTATE_90_CLOCKWISE) # Rotate the frame (should propably be done somewhere else)
                     self.frame = tmp_frame
-                    self.new_frame = True
+                    self.new_frame = True # New frame is available
                 except Exception as e:
                     print("Error reading frame:", e)
-            elapsed_time = time.time() - start_time
-            time.sleep(max(0, frame_time - elapsed_time))
+
+    def get_next_frame_at_desired_rate(self):
+        fps = self.fps  # desired framerate
+        frame_duration = 1.0 / fps
+        next_frame_time = time.perf_counter() # Target time for the next frame
+
+        while not self.stopped:
+            now = time.perf_counter()
+
+            if now < next_frame_time:
+                time.sleep(next_frame_time - now) # Sleep until it's time for the next frame, if we're ahead of schedule
+
+            next_frame_time += frame_duration  # Schedule the next frame time in advance (prevents drift)
+
+            if not self.grabbed:
+                self.stop() 
+            else:
+                try:
+                    (self.grabbed, tmp_frame) = self.stream.read() # Read a new frame from the stream
+                    tmp_frame = cv2.rotate(tmp_frame, rotateCode=cv2.ROTATE_90_CLOCKWISE) # Rotate the frame (should propably be done somewhere else)
+                    self.frame = tmp_frame
+                    self.new_frame = True # New frame is available
+                except Exception as e:
+                    print("Error reading frame:", e)
+
+            # If we're running behind, resync the clock. This prevents cumulative lag over time
+            now = time.perf_counter()
+            if now > next_frame_time:
+                next_frame_time = now
 
     def stop(self):
         self.stopped = True
@@ -82,3 +105,31 @@ class Camera:
 
     def __del__(self):
         self.stream.release()
+
+        
+# with this algorithm the user does not have to set 
+# the corner points in a specific order
+def order_points(pts):
+    pts = np.array(pts, dtype="float32")
+    rect = np.zeros((4,2), dtype="float32")
+
+    s = pts.sum(axis= 1)
+    rect[0] = pts[np.argmin(s)] #Top-left
+    rect[2] = pts[np.argmax(s)] #Bottom-right
+
+    diff = np.diff(pts, axis=1)
+    rect[1] = pts[np.argmin(diff)] #Top-left
+    rect[3] = pts[np.argmax(diff)] #Bottom-left
+
+    return rect
+#The user can remove a corner with 'r'
+#Are the Corners Applied and th user presses 'r' las orner gets removed 
+#and the user has to apply all the corners agai
+def keyPressEvent(self, event):
+        if event.key() == Qt.Key_R:
+            if self.croppedTableCoords:
+                removed = self.croppedTableCoords.pop()
+                print(f"Removed last corner: {removed}")
+                # Optional: Bild neu zeichnen
+                frame = self.initializeCamera()
+                self.updateImageFromFrame(self.cameraImageLabel, frame)
