@@ -517,8 +517,9 @@ class MainWindow(QMainWindow):
 
     def sendMoveValues(self, x, y, type = None):
         if (
-            abs(x - self.data.lastMovePosition[0]) < 50
-            and abs(y - self.data.lastMovePosition[1]) < 50
+            abs(x - self.data.lastMovePosition[0]) < 35
+            and abs(y - self.data.lastMovePosition[1]) < 35
+            and type != "Homing"
         ):
             return
 
