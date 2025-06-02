@@ -53,6 +53,7 @@ class RobotController:
             frame, x, y, radius, robotX, robotY, robotRadius
         )
         self.isPuckGoingToRobot = self._isGoingToRobot()
+        self._makePrediction(frame)
 
         if self.state == State.IDLE:
             if self.isPuckGoingToRobot:
@@ -61,15 +62,6 @@ class RobotController:
             elif self._isAbleToAttack():
                 print("Changed State from IDLE to PLAYING_BACK")
                 self.state = State.PLAYING_BACK
-
-        elif self.state == State.PREDICTING:
-            self._resetPrediction()
-            if self._makePrediction(frame):
-                print("Changed State from PREDICTING to DEFENDING")
-                self.state = State.DEFENDING
-            else:
-                print("Changed State from PREDICTING to HOMING")
-                self.state = State.HOMING
 
         elif self.state == State.DEFENDING:
             self._moveToPredicted()
