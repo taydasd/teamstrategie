@@ -26,6 +26,7 @@ class RobotController:
         self.sendMoveValues = sendMoveValues
         self.updatePreCalculationUi = updatePreCalculationUi
         self.camera = camera
+        self.atHome = True
 
 
     def update(self, calcData: dict = None):
