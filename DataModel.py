@@ -75,5 +75,8 @@ class DataModel:
         self.frameTimeCount =0
         self.frameTimeSum=0
         self.frameTimes = deque(maxlen=100)
+        self.robotX = -1
+        self.robotY = -1
+        self.robotRadius = -1
 
 model = DataModel()

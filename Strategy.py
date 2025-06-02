@@ -32,7 +32,7 @@ class RobotController:
         start_time = time.time()
         if calcData:
             global radius
-            x, y, radius, robotX, robotY, robotRadius, frame = (
+            x, y, radius, self.data.robotX, self.data.robotY, self.data.robotRadius, frame = (
                 calcData["x"],
                 calcData["y"],
                 calcData["radius"],
@@ -42,14 +42,14 @@ class RobotController:
                 calcData["frame"]
             )
 
-        if robotRadius < 10 or robotRadius > 50:
-            robotX, robotY, robotRadius = -1, -1, -1
+        if self.data.robotRadius < 10 or self.data.robotRadius > 50:
+            self.data.robotX, self.data.robotY, self.data.robotRadius = -1, -1, -1
 
         print(f"STATE: {self.state}")
         self.data.currentPosition = (x, y)
 
         frame = self.updatePreCalculationUi(
-            frame, x, y, radius, robotX, robotY, robotRadius
+            frame, x, y, radius, self.data.robotX, self.data.robotY, self.data.robotRadius
         )
         if x < 0 or y < 0:
             return frame
@@ -98,7 +98,7 @@ class RobotController:
         return math.sqrt(dx ** 2 + dy ** 2)
 
     def _isGoingToRobot(self):
-        return self.data.currentPosition[1] < self.data.lastPosition[1] and abs(self.data.lastPosition[1] - self.data.currentPosition[1]) > 1
+        return self.data.currentPosition[1] < self.data.lastPosition[1] and abs(self.data.lastPosition[1] - self.data.currentPosition[1]) > 10
 
     def _isAbleToAttack(self):
         # logik falls puck sich im Bereich des Roboters befindet und sich so bewegt, dass Roboter angreifen kann
