@@ -76,7 +76,7 @@ class RobotController:
 
         elif self.state == State.HOMING:
             self._goHome()
-            if self.atHome:
+            if self._atHome():
                 print("Changed State from HOMING to IDLE")
                 self.state = State.IDLE
                 self.atHome = False
