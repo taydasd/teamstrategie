@@ -292,7 +292,8 @@ class RobotController:
         return True
 
     def _atHome(self):
-        # Prüfen, ob Roboter am Ziel ist
+        if abs(CAMERA_FRAME_HEIGHT / 2 - self.data.robotX) > 40 or abs(DEFENSIVE_LINE - self.data.robotY) > 40:
+            return False
         return True
 
     def _saveState(self):
