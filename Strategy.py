@@ -48,18 +48,19 @@ class RobotController:
         print(f"STATE: {self.state}")
         self.data.currentPosition = (x, y)
 
-        self.data.puckSpeed = self._calculateSpeed()
         frame = self.updatePreCalculationUi(
             frame, x, y, radius, robotX, robotY, robotRadius
         )
-        self.isPuckGoingToRobot = self._isGoingToRobot()
+
         self._resetPrediction()
         self._makePrediction(frame)
+        self.data.puckSpeed = self._calculateSpeed()
+        self.isPuckGoingToRobot = self._isGoingToRobot()
 
         if self.state == State.IDLE:
             if self.isPuckGoingToRobot:
-                print("Changed State from IDLE to PREDICTING")
-                self.state = State.PREDICTING
+                print("Changed State from IDLE to DEFENDING")
+                self.state = State.DEFENDING
             elif self._isAbleToAttack():
                 print("Changed State from IDLE to PLAYING_BACK")
                 self.state = State.PLAYING_BACK
@@ -146,7 +147,7 @@ class RobotController:
                 if self.data.puckSpeed > 4 and self.data.predictionLine.get_m():
                     # time.sleep(3)
                     loopCounter = 0
-                    while loopCounter < 5:
+                    while loopCounter < 2:
                         # Check if puck collides with a wall
                         if (
                             self.data.predictionLine.get_angle() >= 0
@@ -251,7 +252,7 @@ class RobotController:
 
 
     def _moveToPredicted(self):
-        if self.data.predictionMade and self.data.botActivated:
+        if self.data.botActivated:
             moveX, moveY = self.mapCoordinates(
                 self.data.predictedPoint[0],
                 self.data.predictedPoint[1],

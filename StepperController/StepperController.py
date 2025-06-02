@@ -25,8 +25,8 @@ class StepperController:
     def move_to_position(self, x, y):
         command = str(x) + ',' + str(y) + '\n'
         self.connection.write(command.encode())
-        response = self.connection.readline().decode().strip()
-        return response
+        #response = self.connection.readline().decode().strip()
+        return ""
 
     def set_offset(self, x, y):
         if x >= 0:
