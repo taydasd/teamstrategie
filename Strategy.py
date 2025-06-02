@@ -51,6 +51,8 @@ class RobotController:
         frame = self.updatePreCalculationUi(
             frame, x, y, radius, robotX, robotY, robotRadius
         )
+        if x < 0 or y < 0:
+            return frame
 
         self._resetPrediction()
         self._makePrediction(frame)
@@ -73,9 +75,10 @@ class RobotController:
 
         elif self.state == State.HOMING:
             self._goHome()
-            if self._atHome():
+            if self.atHome:
                 print("Changed State from HOMING to IDLE")
                 self.state = State.IDLE
+                self.atHome = False
 
         elif self.state == State.PLAYING_BACK:
             self._playBack()
@@ -275,6 +278,7 @@ class RobotController:
         )
         if self.data.botActivated:
             self.sendMoveValues(int(moveX), int(moveY), "Homing")
+            self.atHome = True
 
     def _playBack(self):
         # Playback-Logik bei langsamem Puck in eigenem Feld
