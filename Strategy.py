@@ -269,7 +269,7 @@ class RobotController:
             self.sendMoveValues(int(moveX), int(moveY), "Defense")
 
     def _goHome(self):
-        if self.data.botActivated:
+        if self.data.botActivated and not self.isPuckBehindRobot():
             moveX, moveY = self.mapCoordinates(
                 (CAMERA_FRAME_HEIGHT / 2),
                 DEFENSIVE_LINE,
@@ -311,7 +311,13 @@ class RobotController:
         y = y * yScale
         return x, y
     
-    
+    def isPuckBehindRobot(self):
+        # Robot was not detected
+        if self.data.robotY == -1:
+            return False
+
+        return self.data.robotY > self.data.currentPosition[1]
+
     
 
 
