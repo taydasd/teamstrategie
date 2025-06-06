@@ -530,8 +530,8 @@ class MainWindow(QMainWindow):
         self.data.positionsSent += 1
         # print(f"Sending {self.positionsSent} (X:{int(x)}, Y:{int(y)})")
         response = self.stepperController.move_to_position(x, y)
-        print(f"{x},{y}")
-        print(response)
+        #print(f"{x},{y}")
+        #print(response)
 
     def calibrate(self):
         # Add your calibration code here
@@ -582,7 +582,7 @@ class MainWindow(QMainWindow):
         # Check if new camera image is available
 
         if self.camera.stopped:
-            print("Warning: Kamera neustarten...")
+            #print("Warning: Kamera neustarten...")
             self.camera = Camera(
                 CAMERA_INDEX,
                 CAMERA_FRAME_WIDTH,
@@ -696,9 +696,9 @@ class MainWindow(QMainWindow):
                                                     * 2.5
                                                 ),
                                             )
-                                            print(
-                                                f"Reflection line speed > 28 m={self.reflectionLine.get_m()}"
-                                            )
+                                            #print(
+                                                #f"Reflection line speed > 28 m={self.reflectionLine.get_m()}"
+                                            #)
                                         else:
                                             self.reflectionLine = Line(
                                                 self.collisionPoint,
@@ -709,9 +709,9 @@ class MainWindow(QMainWindow):
                                                     * 1.7
                                                 ),  # original value 2.5
                                             )
-                                            print(
-                                                f"Reflection line m={self.reflectionLine.get_m()}"
-                                            )
+                                            #print(
+                                                #f"Reflection line m={self.reflectionLine.get_m()}"
+                                            #)
                                         self.predictedPoint = (
                                             self.reflectionLine.get_x(DEFENSIVE_LINE),
                                             DEFENSIVE_LINE,
@@ -911,8 +911,8 @@ class MainWindow(QMainWindow):
 
             return frame
         except Exception as e:
-            print("Couldn't process frame!")
-            print(e)
+            #print("Couldn't process frame!")
+            #print(e)
             self.camera.stop()
             return None
 
@@ -976,8 +976,8 @@ class MainWindow(QMainWindow):
 
             return frame
         except Exception as e:
-            print("Couldn't process frame!")
-            print(e)
+            #print("Couldn't process frame!")
+            #print(e)
             self.camera.stop()
             return None
 
@@ -1020,8 +1020,8 @@ class MainWindow(QMainWindow):
                         thickness=2,
                         lineType=4,
                     )
-                    print(self.data.savedPoint)
-                    print(self.data.predictedPoint)
+                    #print(self.data.savedPoint)
+                    #print(self.data.predictedPoint)
                     #time.sleep(3)
 
             # Draw prediction line before collision
@@ -1036,11 +1036,11 @@ class MainWindow(QMainWindow):
             # Executed if the puck collides with a wall
             if self.data.puckCollides:
                 if len(self.data.collisionPoints) > 0:
-                    print(len(self.data.collisionPoints))
-                    if(len(self.data.predictedPoints)>0):
-                        print(len(self.data.predictedPoints)) # 5!!!!
-                        print(self.data.predictedPoints)
-                        print(self.data.predictedPoints)
+                    #print(len(self.data.collisionPoints))
+                    #if(len(self.data.predictedPoints)>0):
+                        #print(len(self.data.predictedPoints)) # 5!!!!
+                        #print(self.data.predictedPoints)
+                        #print(self.data.predictedPoints)
                         #stime.sleep(3)
 
                     for i in range(len(self.data.predictedPoints)):
@@ -1141,8 +1141,8 @@ class MainWindow(QMainWindow):
 
             return frame
         except Exception as e:
-            print("Couldn't process frame!")
-            print(e)
+            #print("Couldn't process frame!")
+            #print(e)
             self.camera.stop()
             return None
 
@@ -1168,7 +1168,7 @@ class MainWindow(QMainWindow):
 
     def preUpdate(self):
             if self.camera.stopped:
-                print("Warning: Kamera neustarten...")
+                #print("Warning: Kamera neustarten...")
                 self.camera = Camera(
                     CAMERA_INDEX,
                     CAMERA_FRAME_WIDTH,
@@ -1199,7 +1199,7 @@ class MainWindow(QMainWindow):
                     self.updateFrameTime()
                     end_time = time.time()
                     zeit = end_time - start_time
-                    print(f"Benötigte Zeit: {zeit}")
+                    #print(f"Benötigte Zeit: {zeit}")
 
 
 
