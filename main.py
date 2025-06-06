@@ -1166,40 +1166,40 @@ class MainWindow(QMainWindow):
         pixmap = QPixmap(qtImg)
         image.setPixmap(pixmap)
 
-def preUpdate(self):
-        if self.camera.stopped:
-            print("Warning: Kamera neustarten...")
-            self.camera = Camera(
-                CAMERA_INDEX,
-                CAMERA_FRAME_WIDTH,
-                CAMERA_FRAME_HEIGHT,
-                CAMERA_FOCUS,
-                CAMERA_BUFFERSIZE,
-                CAMERA_FRAMERATE,
-                CAMERA_STREAM_URL,
-            ).start()
+    def preUpdate(self):
+            if self.camera.stopped:
+                print("Warning: Kamera neustarten...")
+                self.camera = Camera(
+                    CAMERA_INDEX,
+                    CAMERA_FRAME_WIDTH,
+                    CAMERA_FRAME_HEIGHT,
+                    CAMERA_FOCUS,
+                    CAMERA_BUFFERSIZE,
+                    CAMERA_FRAMERATE,
+                    CAMERA_STREAM_URL,
+                ).start()
 
-        if self.camera.new_frame:
-            start_time = time.time()
-            frame, frame_timestamp = self.camera.get_current_frame_with_timestamp()
-            frame = self.apply_perspective_correction(frame)
-            if frame is not None:
-                x, y, radius, robotX, robotY, robotRadius = processFrame(frame, self)
-                data = {
-                    "x": x,
-                    "y": y,
-                    "radius": radius,
-                    "robotX": robotX,
-                    "robotY": robotY,
-                    "robotRadius": robotRadius,
-                    "frame": frame
-                }
-                frame = self.controller.update(data)
-                self.updatePostCalculationUi(frame)
-                self.updateFrameTime()
-                end_time = time.time()
-                zeit = end_time - start_time
-                print(f"Benötigte Zeit: {zeit}")
+            if self.camera.new_frame:
+                start_time = time.time()
+                frame, frame_timestamp = self.camera.get_current_frame_with_timestamp()
+                frame = self.apply_perspective_correction(frame)
+                if frame is not None:
+                    x, y, radius, robotX, robotY, robotRadius, axisRightY, axisLeftY = processFrame(frame, self)
+                    data = {
+                        "x": x,
+                        "y": y,
+                        "radius": radius,
+                        "robotX": robotX,
+                        "robotY": robotY,
+                        "robotRadius": robotRadius,
+                        "frame": frame
+                    }
+                    frame = self.controller.update(data)
+                    self.updatePostCalculationUi(frame)
+                    self.updateFrameTime()
+                    end_time = time.time()
+                    zeit = end_time - start_time
+                    print(f"Benötigte Zeit: {zeit}")
 
 
 

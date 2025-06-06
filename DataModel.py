@@ -79,5 +79,6 @@ class DataModel:
         self.robotY = -1
         self.robotRadius = -1
         self.attackedPoint = (0,0)
+        self.last_timestamp_to_measure_processed_frames = datetime.now()
 
 model = DataModel()
