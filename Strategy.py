@@ -284,13 +284,19 @@ class RobotController:
 
     def _playBack(self):
         # Playback-Logik bei langsamem Puck in eigenem Feld
-        pass
+        if not self.data.botActivated: return
+        moveX = self.data.currentPosition[0]
+        moveY = self.data.currentPosition[1]
+        self.sendMoveValues(int(moveX), int(moveY), "Homing")
+        self.data.attackedPoint = self.data.currentPosition
+
 
     def _playedBack(self):
         # Logik zur erkennung ob Puck zurückgespielt wurde
         # Fallback einbauen, falls Roboter Puck nicht getroffen hat
         # dieser soll dann zurück in PREDICTION FALLEN
-        return True
+        is_near = abs(self.data.currentPosition[0] - self.data.attackedPoint[0]) < 40 or abs(self.data.currentPosition[1] - self.data.attackedPoint[1]) < 40
+        return is_near
 
     def _atHome(self):
         if abs(CAMERA_FRAME_HEIGHT / 2 - self.data.robotX) > 40 or abs(DEFENSIVE_LINE - self.data.robotY) > 40:

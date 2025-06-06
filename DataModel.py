@@ -78,5 +78,6 @@ class DataModel:
         self.robotX = -1
         self.robotY = -1
         self.robotRadius = -1
+        self.attackedPoint = (0,0)
 
 model = DataModel()
