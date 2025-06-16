@@ -97,7 +97,11 @@ class RobotController:
         dx = self.data.currentPosition[0] - self.data.lastPosition[0]
         dy = self.data.currentPosition[1] - self.data.lastPosition[1]
         delta = (self.data.currentFrameTimestamp - self.data.lastFrameTimestamp).total_seconds()
-        return math.sqrt(dx ** 2 + dy ** 2) / delta
+        if not delta == 0:
+            return math.sqrt(dx ** 2 + dy ** 2) / delta
+        return math.sqrt(dx ** 2 + dy ** 2)
+        
+        
 
     def _isGoingToRobot(self):
         return self.data.currentPosition[1] < self.data.lastPosition[1] and abs(self.data.lastPosition[1] - self.data.currentPosition[1]) > 3
