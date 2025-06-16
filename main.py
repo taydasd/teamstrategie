@@ -609,11 +609,11 @@ class MainWindow(QMainWindow):
 
                 self.currentPosition = (x, y)
 
-                # Calculate robot and puck speed
+                # Calculate puck speed
                 self.puckSpeed = math.sqrt(
                     (self.currentPosition[0] - self.lastPosition[0]) ** 2
                     + (self.currentPosition[1] - self.lastPosition[1]) ** 2
-                )
+                ) / (self.data.currentFrameTimestamp - self.data.lastFrameTimestamp)
 
                 frame = self.updatePreCalculationUi(
                     frame, x, y, radius, robotX, robotY, robotRadius
