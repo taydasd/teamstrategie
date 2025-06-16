@@ -29,6 +29,8 @@ class StepperController:
         self.connection.reset_input_buffer()
 
         start_time1 = time.time()
+        self.connection.reset_input_buffer()
+        self.connection.reset_output_buffer()
         self.connection.write(command.encode())
         print(f"Zeit benötigt für write: {time.time()-start_time1}")
         start_time2 = time.time()

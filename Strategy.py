@@ -96,7 +96,12 @@ class RobotController:
     def _calculateSpeed(self):
         dx = self.data.currentPosition[0] - self.data.lastPosition[0]
         dy = self.data.currentPosition[1] - self.data.lastPosition[1]
+        delta = (self.data.currentFrameTimestamp - self.data.lastFrameTimestamp).total_seconds()
+        if not delta == 0:
+            return math.sqrt(dx ** 2 + dy ** 2) / delta
         return math.sqrt(dx ** 2 + dy ** 2)
+        
+        
 
     def _isGoingToRobot(self):
         return self.data.currentPosition[1] < self.data.lastPosition[1] and abs(self.data.lastPosition[1] - self.data.currentPosition[1]) > 3
@@ -286,13 +291,13 @@ class RobotController:
         # Playback-Logik bei langsamem Puck in eigenem Feld
         if not self.data.botActivated: return
         offsetX = 0
-        if self.currentPosition[0] < 120:
+        if self.data.currentPosition[0] < 120:
             offsetX = -20
-        if self.currentPosition[0] > 280:
+        if self.data.currentPosition[0] > 280:
             offsetX = 20
         moveX, moveY = self.mapCoordinates(
-            self.currentPosition[0] + offsetX,
-            self.currentPosition[1] + 10,
+            self.data.currentPosition[0] + offsetX,
+            self.data.currentPosition[1] + 10,
             CAMERA_FRAME_HEIGHT,
             CAMERA_FRAME_ROBOT_MAX_Y,
             TABLE_MAX_X,
@@ -337,7 +342,7 @@ class RobotController:
         if self.data.robotY == -1:
             return False
 
-        return self.data.robotY > self.data.currentPosition[1]
+        return self.data.robotY > self.data.currentPosition[1] and self.data.currentPosition[0] - CAMERA_FRAME_WIDTH/6 < self.data.robotX < self.data.currentPosition[0] + CAMERA_FRAME_WIDTH/6
 
     
 
