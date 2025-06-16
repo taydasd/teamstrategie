@@ -5,6 +5,7 @@ from PyQt5.QtCore import QThread
 from enum import Enum
 
 
+
 class StepperController:
 
     readyForNewPosition = True
@@ -24,8 +25,12 @@ class StepperController:
 
     def move_to_position(self, x, y):
         command = str(x) + ',' + str(y) + '\n'
+        start_time1 = time.time()
         self.connection.write(command.encode())
-        #response = self.connection.readline().decode().strip()
+        print(f"Zeit benötigt für write: {time.time()-start_time1}")
+        start_time2 = time.time()
+        response = self.connection.readline().decode().strip()
+        print(f"Zeit benötigt für response: {time.time()-start_time2}")
         return ""
 
     def set_offset(self, x, y):
