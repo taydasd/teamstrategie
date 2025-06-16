@@ -26,7 +26,7 @@ class StepperController:
     def move_to_position(self, x, y):
         command = str(x) + ',' + str(y) + '\n'
 
-        self.connection.reset_input_buffer()
+      #  self.connection.reset_input_buffer()
 
         start_time1 = time.time()
         self.connection.reset_input_buffer()
