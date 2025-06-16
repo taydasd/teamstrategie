@@ -96,7 +96,8 @@ class RobotController:
     def _calculateSpeed(self):
         dx = self.data.currentPosition[0] - self.data.lastPosition[0]
         dy = self.data.currentPosition[1] - self.data.lastPosition[1]
-        return math.sqrt(dx ** 2 + dy ** 2)
+        return math.sqrt(dx ** 2 + dy ** 2) / (self.data.currentFrameTimestamp - self.data.lastFrameTimestamp)
+
 
     def _isGoingToRobot(self):
         return self.data.currentPosition[1] < self.data.lastPosition[1] and abs(self.data.lastPosition[1] - self.data.currentPosition[1]) > 3
@@ -337,7 +338,7 @@ class RobotController:
         if self.data.robotY == -1:
             return False
 
-        return self.data.robotY > self.data.currentPosition[1]
+        return self.data.robotY > self.data.currentPosition[1] and self.data.currentPosition[0] - CAMERA_FRAME_WIDTH/6 < self.data.robotX < self.data.currentPosition[0] + CAMERA_FRAME_WIDTH/6
 
     
 
