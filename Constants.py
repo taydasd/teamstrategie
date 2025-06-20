@@ -21,7 +21,8 @@ CAMERA_ROBOT_MAX_RADIUS = 30
 
 
 CAMERA_INDEX=0
-CAMERA_STREAM_URL = "http://10.0.0.2:5000/video_feed"
+# Change the URL to "virtual" if you want to simulate the Camera using a pre-recorded video
+CAMERA_STREAM_URL =  "http://10.0.0.2:5000/video_feed" #"virtual"  
 CAMERA_FRAME_WIDTH = 640
 CAMERA_FRAME_HEIGHT = 480
 CAMERA_FRAME_ROBOT_MAX_Y = 270
@@ -42,7 +43,7 @@ STEPPER_COM_PORT = "COM3"
 STEPPER_BAUDRATE = 115200
 
 TABLE_MAX_X = 1885
-TABLE_MAX_Y = 1820
+TABLE_MAX_Y = 1450      #ursprünglicher Wert: 1820
 
 SPEED_THRESHOLD = 20
 

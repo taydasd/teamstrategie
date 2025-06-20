@@ -283,6 +283,8 @@ class RobotController:
                 TABLE_MAX_X,
                 TABLE_MAX_Y,
             )
+            moveX = TABLE_MAX_X - moveX
+
             #print("_goHome")
             self.moveIfPossible(moveX, moveY, "Homing")
             self.atHome = True
