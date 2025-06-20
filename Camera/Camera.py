@@ -137,8 +137,8 @@ def order_points(pts):
 #and the user has to apply all the corners agai
 def keyPressEvent(self, event):
         if event.key() == Qt.Key_R:
-            if self.croppedTableCoords:
-                removed = self.croppedTableCoords.pop()
+            if self.data.croppedTableCoords:
+                removed = self.data.croppedTableCoords.pop()
                 print(f"Removed last corner: {removed}")
                 # Optional: Bild neu zeichnen
                 #frame = self.apply_perspective_correction(frame)
