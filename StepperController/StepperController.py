@@ -3,6 +3,7 @@ import time
 from queue import Queue
 from PyQt5.QtCore import QThread
 from enum import Enum
+from Constants import *
 
 
 
@@ -41,7 +42,8 @@ class StepperController:
         return ""
 
     def updateRobotPos(self,x,y):
-        self.camRobotPositionX =int(x)    
+        moveX = TABLE_MAX_X -x
+        self.camRobotPositionX =int(moveX)    
         self.camRobotPositionY =int(y)
 
     def set_offset(self, x, y):
