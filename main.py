@@ -1101,13 +1101,18 @@ class MainWindow(QMainWindow):
 
     def updatePreCalculationUi(self, frame, x, y, radius, robotX, robotY, robotRadius):
         # Update puck and robot values in the UI
+        
         self.puckXLabel.setText(str(f"X: {x:.0f}"))
         self.puckYLabel.setText(str(f"Y: {y:.0f}"))
+
         self.puckRadiusLabel.setText(str(f"Radius: {radius:.0f}"))
         self.puckSpeedLabel.setText(str(f"Speed: {self.data.puckSpeed:.1f}"))
 
-        self.robotXLabel.setText(str(f"X: {robotX:.0f}"))
-        self.robotYLabel.setText(str(f"Y: {robotY:.0f}"))
+        tempXroobot, tempYrobot = self.mapCoordinates(robotX, robotY, CAMERA_FRAME_HEIGHT, CAMERA_FRAME_ROBOT_MAX_Y, TABLE_MAX_X, TABLE_MAX_Y)
+        tempXroobot = TABLE_MAX_X - tempXroobot
+        #tempXroobot=1.0778*tempXroobot-75.4491
+        self.robotXLabel.setText(str(f"X: {robotX:.0f}, {tempXroobot:.0f} (table)"))
+        self.robotYLabel.setText(str(f"Y: {robotY:.0f}, {tempYrobot:.0f} (table)"))
         self.robotRadiusLabel.setText(str(f"Radius: {robotRadius:.0f}"))
 
         return frame
@@ -1185,11 +1190,12 @@ class MainWindow(QMainWindow):
                 frame = self.apply_perspective_correction(frame)
                 if frame is not None:
                     x, y, radius, robotX, robotY, robotRadius, axisRightY, axisLeftY = processFrame(frame, self)
+                    x_tats = 1.07793*robotX-20.1572
                     data = {
                         "x": x,
                         "y": y,
                         "radius": radius,
-                        "robotX": robotX,
+                        "robotX": x_tats,
                         "robotY": robotY,
                         "robotRadius": robotRadius,
                         "frame": frame
