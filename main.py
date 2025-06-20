@@ -475,7 +475,7 @@ class MainWindow(QMainWindow):
             self.data.botActivated = False
 
     def applyCorners(self):
-        if len(self.croppedTableCoords) == 4:
+        if len(self.data.croppedTableCoords) == 4:
             self.logTextbox.append(
                 "Applied corners. Fitting image. If the image does not look right then reset the corners. Made a mistake press 'r' to reset last corner"
             )
@@ -489,7 +489,7 @@ class MainWindow(QMainWindow):
     def resetCorners(self):
         self.logTextbox.append("Reset corners. Resetting image fit.")
         self.data.cornersApplied = False
-        self.croppedTableCoords = []
+        self.data.croppedTableCoords = []
 
     def getImageClickPos(self, event):
         # The Camera image is double the size of the debug window image.
@@ -498,8 +498,8 @@ class MainWindow(QMainWindow):
         print(f"Clicked x:{x}, y:{y}")
         # 1 is left click, 2 is right click
         mouseButton = event.button()
-        if mouseButton == 1 and len(self.croppedTableCoords) < 4:
-            self.croppedTableCoords.append((x, y))
+        if mouseButton == 1 and len(self.data.croppedTableCoords) < 4:
+            self.data.croppedTableCoords.append((x, y))
         elif mouseButton == 2:
             moveX, moveY = self.mapCoordinates(
                 x,
@@ -1134,7 +1134,7 @@ class MainWindow(QMainWindow):
 
             # Select corners of the camera image if they aren't set
             if not self.data.cornersApplied:
-                for corner in self.croppedTableCoords:
+                for corner in self.data.croppedTableCoords:
                     cv2.circle(frame, (corner[0], corner[1]), 5, (255, 255, 255), 2)
 
             self.data.frameCounter = self.data.frameCounter + 1
