@@ -124,5 +124,5 @@ def order_points(pts):
 def keyPressEvent(self, event):
         if event.key() == Qt.Key_R and not self.cornersApplied:
             if self.croppedTableCoords:
-                removed = self.croppedTableCoords.pop()
+                removed = self.data.croppedTableCoords.pop()
                 print(f"Removed last corner: {removed}")
