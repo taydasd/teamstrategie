@@ -536,7 +536,8 @@ class MainWindow(QMainWindow):
         # if self.botActivated:
         self.data.positionsSent += 1
         # print(f"Sending {self.positionsSent} (X:{int(x)}, Y:{int(y)})")
-        response = self.stepperController.move_to_position(x, y)
+        if self.stepperController is not None:
+            response = self.stepperController.move_to_position(x, y)
         self.data.syncRobotPosition = False
         #print(f"{x},{y}")
         #print(response)
