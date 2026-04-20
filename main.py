@@ -22,6 +22,8 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QWidget,
     QSlider,
+    QTabWidget,
+    QSpinBox,
 )
 from Constants import *
 from Camera import Camera
@@ -75,27 +77,35 @@ class MainWindow(QMainWindow):
         self.cameraImageLabel = QLabel(self)
         self.cameraImageLabel.setAlignment(Qt.AlignTop)
         self.cameraImageLabel.mousePressEvent = self.getImageClickPos
+        
         # Create a log textbox.
         self.logTextbox = QTextEdit(self)
         self.logTextbox.setReadOnly(True)
-        # Create the "Exit" button.
+        
+        # Create the buttons and inputs.
         self.exitButton = QPushButton("Exit", self)
         self.exitButton.clicked.connect(self.exitApp)
-        # Create the "Calibrate" button.
         self.calibrateButton = QPushButton("Calibrate", self)
         self.calibrateButton.clicked.connect(self.calibrate)
-        # Create the "Move To Position" button.
         self.moveToPositionButton = QPushButton("Move To Position", self)
         self.moveToPositionButton.clicked.connect(self.moveToPosition)
-        # Create the "Maxima" button.
         self.getMaximaButton = QPushButton("Get Maxima", self)
         self.getMaximaButton.clicked.connect(self.getMaxima)
-        self.xCoordTextBox = QTextEdit()
+        
+        # X-Koordinate mit Pfeiltasten
+        self.xCoordTextBox = QSpinBox()
+        self.xCoordTextBox.setRange(0, 2000) # Bereich anpassen (Tisch-Breite)
+        self.xCoordTextBox.setSingleStep(10) # Wie viel pro Klick?
         self.xCoordTextBox.setFixedHeight(25)
-        self.xCoordTextBox.setText("0")
-        self.yCoordTextBox = QTextEdit()
+        self.xCoordTextBox.setStyleSheet("color: white; background-color: #333; border: 1px solid #555;")
+        
+        # Y-Koordinate mit Pfeiltasten
+        self.yCoordTextBox = QSpinBox()
+        self.yCoordTextBox.setRange(0, 2000) # Bereich anpassen (Tisch-Höhe)
+        self.yCoordTextBox.setSingleStep(10)
         self.yCoordTextBox.setFixedHeight(25)
-        self.yCoordTextBox.setText("0")
+        self.yCoordTextBox.setStyleSheet("color: white; background-color: #333; border: 1px solid #555;")
+        
         self.controlHorizontalBox = QHBoxLayout()
         self.controlHorizontalBox.addWidget(self.calibrateButton)
         self.controlHorizontalBox.addWidget(self.getMaximaButton)
@@ -104,14 +114,29 @@ class MainWindow(QMainWindow):
         self.controlHorizontalBox.addWidget(self.xCoordTextBox)
         self.controlHorizontalBox.addWidget(QLabel(text="Y"))
         self.controlHorizontalBox.addWidget(self.yCoordTextBox)
+        
+        # Setup the filter UIs (this creates self.filterVbox and self.filterRobotVbox)
         self.setupPuckFilterUI()
         self.setupRobotFilterUI()
-        # Create the right vertical box.
-        self.vboxRight = QVBoxLayout()
-        self.hboxImages = QHBoxLayout()
-        self.hboxImages.addWidget(self.cameraImageLabel)
-        self.vboxRight.addLayout(self.hboxImages)
-        # Puck values.
+
+        # Corner setting & Bot setting
+        self.cornersHBox = QHBoxLayout()
+        self.cornersApplyButton = QPushButton("Apply Corners", self)
+        self.cornersApplyButton.clicked.connect(self.applyCorners)
+        self.cornersResetButton = QPushButton("Reset Corners", self)
+        self.cornersResetButton.clicked.connect(self.resetCorners)
+        self.cornersHBox.addWidget(self.cornersApplyButton)
+        self.cornersHBox.addWidget(self.cornersResetButton)
+        
+        self.botSettingsHBox = QHBoxLayout()
+        self.activateBotCheckBox = QCheckBox("Bot Active")
+        self.activateBotCheckBox.clicked.connect(self.setBotState)
+        self.activateBotCheckBox.setCheckState(Qt.CheckState.Unchecked)
+        self.frameTimeLabel = QLabel("Frame Time: 0ms")
+        self.botSettingsHBox.addWidget(self.activateBotCheckBox)
+        self.botSettingsHBox.addWidget(self.frameTimeLabel)
+
+        # Values
         self.puckValuesHbox = QHBoxLayout()
         self.puckXLabel = QLabel(text="X: 0")
         self.puckYLabel = QLabel(text="Y: 0")
@@ -122,6 +147,7 @@ class MainWindow(QMainWindow):
         self.puckValuesHbox.addWidget(self.puckYLabel)
         self.puckValuesHbox.addWidget(self.puckRadiusLabel)
         self.puckValuesHbox.addWidget(self.puckSpeedLabel)
+        
         self.robotValuesHBox = QHBoxLayout()
         self.robotXLabel = QLabel(text="X: 0")
         self.robotYLabel = QLabel(text="Y: 0")
@@ -130,41 +156,59 @@ class MainWindow(QMainWindow):
         self.robotValuesHBox.addWidget(self.robotXLabel)
         self.robotValuesHBox.addWidget(self.robotYLabel)
         self.robotValuesHBox.addWidget(self.robotRadiusLabel)
-        # Corner setting.
-        self.cornersHBox = QHBoxLayout()
-        self.cornersApplyButton = QPushButton("Apply Corners", self)
-        self.cornersApplyButton.clicked.connect(self.applyCorners)
-        self.cornersResetButton = QPushButton("Reset Corners", self)
-        self.cornersResetButton.clicked.connect(self.resetCorners)
-        self.cornersHBox.addWidget(self.cornersApplyButton)
-        self.cornersHBox.addWidget(self.cornersResetButton)
-        self.botSettingsHBox = QHBoxLayout()
-        self.activateBotCheckBox = QCheckBox("Bot Active")
-        self.botSettingsHBox.addWidget(self.activateBotCheckBox)
-        self.activateBotCheckBox.clicked.connect(self.setBotState)
-        self.activateBotCheckBox.setCheckState(Qt.CheckState.Unchecked)
-        self.frameTimeLabel = QLabel("Frame Time: 0ms")
-        self.botSettingsHBox.addWidget(self.frameTimeLabel)
-        # Create the left vertical box.
+
+        self.tabs = QTabWidget()
+        self.tabs.setStyleSheet("""
+            QTabWidget::pane { border: 1px solid #444; background: #222; }
+            QTabBar::tab { background: #333; color: #ddd; padding: 10px; border: 1px solid #444; }
+            QTabBar::tab:selected { background: #555; color: white; border-bottom: none; }
+            QWidget { background-color: #222; color: #eee; }
+        """)
+
+        # Tab 1: Controls & Info
+        self.tabControls = QWidget()
+        self.tabControlsLayout = QVBoxLayout()
+        self.tabControlsLayout.addLayout(self.controlHorizontalBox)
+        self.tabControlsLayout.addLayout(self.puckValuesHbox)
+        self.tabControlsLayout.addLayout(self.robotValuesHBox)
+        self.tabControlsLayout.addLayout(self.cornersHBox)
+        self.tabControlsLayout.addLayout(self.botSettingsHBox)
+        self.tabControlsLayout.addWidget(self.logTextbox)
+        self.tabControlsLayout.addWidget(self.exitButton)
+        self.tabControls.setLayout(self.tabControlsLayout)
+
+        # Tab 2: Puck Filter
+        self.tabPuck = QWidget()
+        self.tabPuck.setLayout(self.filterVbox)
+
+        # Tab 3: Robot Filter
+        self.tabRobot = QWidget()
+        self.tabRobot.setLayout(self.filterRobotVbox)
+
+        # Tabs zum Tab-Widget hinzufügen
+        self.tabs.addTab(self.tabControls, "Controls & Log")
+        self.tabs.addTab(self.tabPuck, "Puck Settings")
+        self.tabs.addTab(self.tabRobot, "Robot Settings")
+
+        # Create the left vertical box (Now much cleaner!)
         self.vboxLeft = QVBoxLayout()
-        self.vboxLeft.addLayout(self.controlHorizontalBox)
-        self.vboxLeft.addLayout(self.puckValuesHbox)
-        self.vboxLeft.addLayout(self.filterVbox)
-        self.vboxLeft.addLayout(self.robotValuesHBox)
-        self.vboxLeft.addLayout(self.filterRobotVbox)
-        self.vboxLeft.addLayout(self.cornersHBox)
-        self.vboxLeft.addLayout(self.botSettingsHBox)
-        self.vboxLeft.addWidget(self.logTextbox)
-        self.vboxLeft.addWidget(self.exitButton)
+        self.vboxLeft.addWidget(self.tabs)
+
+        # Create the right vertical box.
+        self.vboxRight = QVBoxLayout()
+        self.hboxImages = QHBoxLayout()
+        self.hboxImages.addWidget(self.cameraImageLabel)
+        self.vboxRight.addLayout(self.hboxImages)
+
+        # Set central widget
         self.hboxMain = QHBoxLayout()
-        # Create a central widget to hold the layouts
         self.CentralWidget = QWidget()
         self.CentralWidget.setLayout(self.hboxMain)
-
-        # Set the central widget and add the horizontal layout to the bottom
         self.setCentralWidget(self.CentralWidget)
-        self.hboxMain.addLayout(self.vboxLeft)
-        self.hboxMain.addLayout(self.vboxRight)
+        
+        # Add to Main Layout
+        self.hboxMain.addLayout(self.vboxLeft, stretch=1) # Tab widget takes left side
+        self.hboxMain.addLayout(self.vboxRight, stretch=1) # Video takes right side
 
     def setupRobotFilterUI(self):
         # Create the sliders for adjusting the filters.
@@ -572,8 +616,8 @@ class MainWindow(QMainWindow):
     def moveToPosition(self):
         if self.stepperController is not None:
             try:
-                x = int(self.xCoordTextBox.toPlainText())
-                y = int(self.yCoordTextBox.toPlainText())
+                x = self.xCoordTextBox.value()
+                y = self.yCoordTextBox.value()
                 self.logTextbox.append("Moving to X=" + str(x) + ",Y=" + str(y))
                 self.sendMoveValues(x, y)
             except ValueError:
@@ -992,92 +1036,61 @@ class MainWindow(QMainWindow):
 
 
     def updatePostCalculationUi(self, frame):
+        # Hilfsfunktion für perfekt sichtbare Pfeile (schwarzer Rand + farbiger Kern)
+        def draw_arrow(img, pt1, pt2, color):
+            # Schwarzer Hintergrund-Pfeil (Outline)
+            cv2.arrowedLine(img, pt1, pt2, (0, 0, 0), thickness=5, tipLength=0.03)
+            # Farbiger Vordergrund-Pfeil
+            cv2.arrowedLine(img, pt1, pt2, color, thickness=2, tipLength=0.03)
+
         if self.data.predictionMade and self.data.predictionLine.get_m() is not None:
             if self.data.showDebugImages:
-                # Draw predicted and current puck position
-                cv2.circle(
-                    frame,
-                    (int(self.data.predictedPoint[0]), int(self.data.predictedPoint[1])),
-                    5,
-                    (255, 0, 255),
-                    -1,
-                )
-                cv2.circle(
-                    frame,
-                    (int(self.data.savedPoint[0]), int(self.data.savedPoint[1])),
-                    5,
-                    (0, 0, 0),
-                    -1,
-                )
+                # Draw predicted and saved puck positions
+                cv2.circle(frame, (int(self.data.predictedPoint[0]), int(self.data.predictedPoint[1])), 6, (0, 0, 0), -1)
+                cv2.circle(frame, (int(self.data.predictedPoint[0]), int(self.data.predictedPoint[1])), 4, (255, 0, 255), -1)
+                
+                cv2.circle(frame, (int(self.data.savedPoint[0]), int(self.data.savedPoint[1])), 6, (255, 255, 255), -1)
+                cv2.circle(frame, (int(self.data.savedPoint[0]), int(self.data.savedPoint[1])), 4, (0, 0, 0), -1)
 
-                # Draw predicted line
-                # in welchem Fall ist das puckCollides True UND currentPosition gesetzt?
+                # Direkter Schuss (ohne Wandkollision)
                 if not self.data.puckCollides:
-                    cv2.line(
+                    draw_arrow(
                         frame,
                         (int(self.data.currentPosition[0]), int(self.data.currentPosition[1])),
                         (int(self.data.predictedPoint[0]), int(self.data.predictedPoint[1])),
-                        (255, 0, 0),
-                        thickness=2,
-                        lineType=4,
+                        (0, 200, 255) # Gelb-Orange
                     )
-                    cv2.line(
-                        frame,
-                        (int(self.data.savedPoint[0]), int(self.data.savedPoint[1])),
-                        (int(self.data.predictedPoint[0]), int(self.data.predictedPoint[1])),
-                        (0, 255, 0),
-                        thickness=2,
-                        lineType=4,
-                    )
-                    #print(self.data.savedPoint)
-                    #print(self.data.predictedPoint)
-                    #time.sleep(3)
 
-            # Draw prediction line before collision
-            cv2.line(
-                frame,
-                (int(self.data.savedPoints[0][0]), int(self.data.savedPoints[0][1])),
-                (int(self.data.collisionPoints[0][0]), int(self.data.collisionPoints[0][1])),
-                (255, 0, 0),
-                thickness=2,
-                lineType=4,
-            )
             # Executed if the puck collides with a wall
             if self.data.puckCollides:
                 if len(self.data.collisionPoints) > 0:
-                    #print(len(self.data.collisionPoints))
-                    #if(len(self.data.predictedPoints)>0):
-                        #print(len(self.data.predictedPoints)) # 5!!!!
-                        #print(self.data.predictedPoints)
-                        #print(self.data.predictedPoints)
-                        #stime.sleep(3)
+                    # Draw pre-collision prediction arrow
+                    draw_arrow(
+                        frame,
+                        (int(self.data.savedPoints[0][0]), int(self.data.savedPoints[0][1])),
+                        (int(self.data.collisionPoints[0][0]), int(self.data.collisionPoints[0][1])),
+                        (0, 150, 255) # Orange
+                    )
 
                     for i in range(len(self.data.predictedPoints)):
-                        # Draw collision point
+                        # Draw collision point clearly
                         cv2.circle(
                             frame,
-                            (
-                                int(self.data.collisionPoints[i][0]),
-                                int(self.data.collisionPoints[i][1]),
-                            ),
-                            10,
-                            (255, 255, 255),
-                            -1,
+                            (int(self.data.collisionPoints[i][0]), int(self.data.collisionPoints[i][1])),
+                            8, (0, 0, 0), -1
                         )
-                        # Draw reflection line after collision
-                        cv2.line(
+                        cv2.circle(
                             frame,
-                            (
-                                int(self.data.collisionPoints[i][0]),
-                                int(self.data.collisionPoints[i][1]),
-                            ),
-                            (
-                                int(self.data.predictedPoints[i][0]),
-                                int(self.data.predictedPoints[i][1]),
-                            ),
-                            (255, 255, 0),
-                            thickness=2,
-                            lineType=4,
+                            (int(self.data.collisionPoints[i][0]), int(self.data.collisionPoints[i][1])),
+                            5, (255, 255, 255), -1
+                        )
+
+                        # Draw post-collision reflection arrow
+                        draw_arrow(
+                            frame,
+                            (int(self.data.collisionPoints[i][0]), int(self.data.collisionPoints[i][1])),
+                            (int(self.data.predictedPoints[i][0]), int(self.data.predictedPoints[i][1])),
+                            (0, 255, 255) # Cyan
                         )
 
         if self.data.showDebugImages:
