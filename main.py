@@ -52,7 +52,7 @@ class MainWindow(QMainWindow):
         self.controller = RobotController(self.sendMoveValues, self.updatePreCalculationUi, self.camera)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.preUpdate)
-        self.timer.start(1)  # Every 1 ms
+        self.timer.start(20) 
         self.stepperController = None
         try:
             self.stepperController = StepperController(
@@ -605,6 +605,7 @@ class MainWindow(QMainWindow):
         if self.camera.new_frame:
             
             frame, frame_timestamp = self.camera.get_current_frame_with_timestamp()
+            self.data.currentFrameTimestamp = frame_timestamp
             frame = self.apply_perspective_correction(frame)
             if frame is not None:
                 x, y, radius, robotX, robotY, robotRadius, axisright,axisleft = processFrame(frame, self)
@@ -1196,6 +1197,7 @@ class MainWindow(QMainWindow):
             if self.camera.new_frame:
                 start_time = time.time()
                 frame, frame_timestamp = self.camera.get_current_frame_with_timestamp()
+                self.data.currentFrameTimestamp = frame_timestamp
                 frame = self.apply_perspective_correction(frame)
                 if frame is not None:
                     x, y, radius, robotX, robotY, robotRadius, axisRightY, axisLeftY = processFrame(frame, self)
@@ -1223,6 +1225,21 @@ class MainWindow(QMainWindow):
                         self.stepperController.updateRobotPos(newRobotX,newRobotY, self.data.syncRobotPosition)
 
                     frame = self.controller.update(data)
+                    if frame is None:
+                       return
+                    if not hasattr(self.controller, "debugTargetCam") or self.controller.debugTargetCam is None:
+                        # Startposition: oben mittig beim Tor
+                        debugX = int(CAMERA_FRAME_HEIGHT / 2)
+                        debugY = int(DEFENSIVE_LINE)
+                    else:
+                        debugX, debugY = self.controller.debugTargetCam
+
+                    # Begrenzung (bleibt gleich)
+                    debugX = max(20, min(CAMERA_FRAME_HEIGHT - 20, debugX))
+                    debugY = max(20, min(CAMERA_FRAME_WIDTH - 20, debugY))
+
+                    cv2.circle(frame, (debugX, debugY), 22, (255, 0, 255), 4)
+
                     self.updatePostCalculationUi(frame)
                     self.updateFrameTime()
                     end_time = time.time()
