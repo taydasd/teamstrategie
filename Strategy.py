@@ -298,6 +298,10 @@ class RobotController:
 
         if not self.data.botActivated:
             return
+        
+        # Geschwindigkeitsfilter: Verhindert unnötige Befehle bei Tracking-Fehlern
+        if self.data.puckSpeed > 20:
+            return
 
         moveX, moveY = self.mapCoordinates(
             targetX,
@@ -355,7 +359,9 @@ class RobotController:
         self.moveIfPossible(moveX, moveY, "Play Back")
         self.lastPlaybackMove = (moveX, moveY)
         self.data.attackedPoint = self.data.currentPosition
-        print(f"Attacking: {self.data.currentPosition[0]}, {self.data.currentPosition[1]}")
+        # Nur ausgeben wenn Puck sich in Richtung Roboter bewegt
+        if self.data.currentPosition[1] < self.data.lastPosition[1]:
+            print(f"Attacking: {self.data.currentPosition[0]}, {self.data.currentPosition[1]}")
 
 
     def _playedBack(self):
