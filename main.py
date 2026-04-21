@@ -1194,53 +1194,76 @@ class MainWindow(QMainWindow):
         image.setPixmap(pixmap)
 
     def preUpdate(self):
-            if self.camera.stopped:
-                #print("Warning: Kamera neustarten...")
-                self.camera = Camera(
-                    CAMERA_INDEX,
-                    CAMERA_FRAME_WIDTH,
+        if self.camera.stopped:
+            self.camera = Camera(
+                CAMERA_INDEX,
+                CAMERA_FRAME_WIDTH,
+                CAMERA_FRAME_HEIGHT,
+                CAMERA_FOCUS,
+                CAMERA_BUFFERSIZE,
+                CAMERA_FRAMERATE,
+                CAMERA_STREAM_URL,
+            ).start()
+
+        if self.camera.new_frame:
+            start_time = time.time()
+            frame, frame_timestamp = self.camera.get_current_frame_with_timestamp()
+            # Speichert den aktuellen Frame-Zeitstempel für genauere Berechnungen
+            self.data.currentFrameTimestamp = frame_timestamp
+
+            frame = self.apply_perspective_correction(frame)
+            if frame is not None:
+                x, y, radius, robotX, robotY, robotRadius, axisRightY, axisLeftY = processFrame(frame, self)
+
+                data = {
+                    "x": x,
+                    "y": y,
+                    "radius": radius,
+                    "robotX": robotX,
+                    "robotY": robotY,
+                    "robotRadius": robotRadius,
+                    "frame": frame
+                }
+
+                newRobotX, newRobotY = self.mapCoordinates(
+                    robotX,
+                    robotY,
                     CAMERA_FRAME_HEIGHT,
-                    CAMERA_FOCUS,
-                    CAMERA_BUFFERSIZE,
-                    CAMERA_FRAMERATE,
-                    CAMERA_STREAM_URL,
-                ).start()
+                    CAMERA_FRAME_ROBOT_MAX_Y,
+                    TABLE_MAX_X,
+                    TABLE_MAX_Y,
+                )
 
-            if self.camera.new_frame:
-                start_time = time.time()
-                frame, frame_timestamp = self.camera.get_current_frame_with_timestamp()
-                frame = self.apply_perspective_correction(frame)
-                if frame is not None:
-                    x, y, radius, robotX, robotY, robotRadius, axisRightY, axisLeftY = processFrame(frame, self)
-                    x_tats = 1.07793*robotX-20.1572
-                    data = {
-                        "x": x,
-                        "y": y,
-                        "radius": radius,
-                        "robotX": x_tats,
-                        "robotY": robotY,
-                        "robotRadius": robotRadius,
-                        "frame": frame
-                    }
+                if self.stepperController is not None:
+                    self.stepperController.updateRobotPos(
+                        newRobotX,
+                        newRobotY,
+                        self.data.syncRobotPosition
+                    )
 
-                    newRobotX, newRobotY = self.mapCoordinates(
-                                        robotX,
-                                        robotY,
-                                        CAMERA_FRAME_HEIGHT,
-                                        CAMERA_FRAME_ROBOT_MAX_Y,
-                                        TABLE_MAX_X,
-                                        TABLE_MAX_Y,
-                                    )
-                    
-                    if self.stepperController is not None:
-                        self.stepperController.updateRobotPos(newRobotX,newRobotY, self.data.syncRobotPosition)
+                frame = self.controller.update(data)
+                if frame is None:
+                    return
+                
+                # Debug-Anzeige:
+                # Holt die Zielposition aus der Strategie und zeigt sie als pinken Kreis
+                if not hasattr(self.controller, "debugTargetCam") or self.controller.debugTargetCam is None:
+                    debugX = int(CAMERA_FRAME_HEIGHT / 2)
+                    debugY = int(DEFENSIVE_LINE)
+                else:
+                    debugX, debugY = self.controller.debugTargetCam
 
-                    frame = self.controller.update(data)
-                    self.updatePostCalculationUi(frame)
-                    self.updateFrameTime()
-                    end_time = time.time()
-                    zeit = end_time - start_time
-                    #print(f"Benötigte Zeit: {zeit}")
+                debugX = max(20, min(CAMERA_FRAME_HEIGHT - 20, debugX))
+                debugY = max(20, min(CAMERA_FRAME_WIDTH - 20, debugY))
+
+                cv2.circle(frame, (debugX, debugY), 22, (255, 0, 255), 4)
+
+                self.updatePostCalculationUi(frame)
+                self.updateFrameTime()
+
+                end_time = time.time()
+                zeit = end_time - start_time
+                # print(f"Benötigte Zeit: {zeit}")
 
 
 
