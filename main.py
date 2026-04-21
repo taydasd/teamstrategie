@@ -37,7 +37,7 @@ from DataModel import model
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()  # ruft QMainWindow.__init__ auf
-        self.setWindowTitle("Rocky Hockey 2023")
+        self.setWindowTitle("Rocky Hockey 2026")
         self.setWindowIcon(QIcon("RockyHockey2023Logo.png"))
         self.setupUI()
         # Create a timer to continuously update and process the camera image.
