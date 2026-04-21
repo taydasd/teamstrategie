@@ -666,7 +666,7 @@ class MainWindow(QMainWindow):
                 self.puckSpeed = math.sqrt(
                     (self.currentPosition[0] - self.lastPosition[0]) ** 2
                     + (self.currentPosition[1] - self.lastPosition[1]) ** 2
-                ) / (self.data.currentFrameTimestamp - self.data.lastFrameTimestamp)
+                ) / (self.data.currentFrameTimestamp - self.data.lastFrameTimestamp).total_seconds()
 
                 frame = self.updatePreCalculationUi(
                     frame, x, y, radius, robotX, robotY, robotRadius
