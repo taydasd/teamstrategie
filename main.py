@@ -651,7 +651,7 @@ class MainWindow(QMainWindow):
             frame, frame_timestamp = self.camera.get_current_frame_with_timestamp()
             frame = self.apply_perspective_correction(frame)
             if frame is not None:
-                x, y, radius, robotX, robotY, robotRadius, axisright,axisleft = processFrame(frame, self)
+                x, y, radius, robotX, robotY, robotRadius, axisRightX, axisRightY, axisLeftX, axisLeftY = processFrame(frame, self)
 
                 # TODO: Robot detection is not that stable
                 # Check detected robot radius (if robot was not recognised correctly set invalid values)
