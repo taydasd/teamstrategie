@@ -1257,9 +1257,9 @@ class MainWindow(QMainWindow):
 
             frame = self.apply_perspective_correction(frame)
             if frame is not None:
-                                x, y, radius, robotX, robotY, robotRadius, axisRightX, axisRightY, axisLeftX, axisLeftY = processFrame(frame, self)
+                x, y, radius, robotX, robotY, robotRadius, axisRightX, axisRightY, axisLeftX, axisLeftY = processFrame(frame, self)
 
-            frame = self.updateAxisAngle(
+                frame = self.updateAxisAngle(
                     frame,
                     axisRightX,
                     axisRightY,
@@ -1267,7 +1267,7 @@ class MainWindow(QMainWindow):
                     axisLeftY,
                 )
 
-            data = {
+                data = {
                     "x": x,
                     "y": y,
                     "radius": radius,
@@ -1277,7 +1277,7 @@ class MainWindow(QMainWindow):
                     "frame": frame
                 }
 
-            newRobotX, newRobotY = self.mapCoordinates(
+                newRobotX, newRobotY = self.mapCoordinates(
                     robotX,
                     robotY,
                     CAMERA_FRAME_HEIGHT,
@@ -1286,44 +1286,44 @@ class MainWindow(QMainWindow):
                     TABLE_MAX_Y,
                 )
 
-            if self.stepperController is not None:
+                if self.stepperController is not None:
                     self.stepperController.updateRobotPos(
                         newRobotX,
                         newRobotY,
                         self.data.syncRobotPosition
                     )
 
-                    if self.data.botActivated:
-                        if self.data.axisCorrectionOffset != self.data.lastAxisCorrectionOffset:
-                            try:
+                if self.data.botActivated:
+                    if self.data.axisCorrectionOffset != self.data.lastAxisCorrectionOffset:
+                        try:
                                 self.stepperController.set_offset(0, self.data.axisCorrectionOffset)
                                 self.data.lastAxisCorrectionOffset = self.data.axisCorrectionOffset
-                            except Exception as e:
+                        except Exception as e:
                                 print(f"Axis offset error: {e}")
 
-            frame = self.controller.update(data)
-            if frame is None:
+                frame = self.controller.update(data)
+                if frame is None:
                     return
                 
                 # Debug-Anzeige:
                 # Holt die Zielposition aus der Strategie und zeigt sie als pinken Kreis
-            if not hasattr(self.controller, "debugTargetCam") or self.controller.debugTargetCam is None:
+                if not hasattr(self.controller, "debugTargetCam") or self.controller.debugTargetCam is None:
                     debugX = int(CAMERA_FRAME_HEIGHT / 2)
                     debugY = int(DEFENSIVE_LINE)
-            else:
+                else:
                     debugX, debugY = self.controller.debugTargetCam
 
-            debugX = max(20, min(CAMERA_FRAME_HEIGHT - 20, debugX))
-            debugY = max(20, min(CAMERA_FRAME_WIDTH - 20, debugY))
+                debugX = max(20, min(CAMERA_FRAME_HEIGHT - 20, debugX))
+                debugY = max(20, min(CAMERA_FRAME_WIDTH - 20, debugY))
 
-            cv2.circle(frame, (debugX, debugY), 22, (255, 0, 255), 4)
+                cv2.circle(frame, (debugX, debugY), 22, (255, 0, 255), 4)
 
-            self.updatePostCalculationUi(frame)
-            self.updateFrameTime()
+                self.updatePostCalculationUi(frame)
+                self.updateFrameTime()
 
-            end_time = time.time()
-            zeit = end_time - start_time
-            # print(f"Benötigte Zeit: {zeit}")
+                end_time = time.time()
+                zeit = end_time - start_time
+                # print(f"Benötigte Zeit: {zeit}")
 
 
 
