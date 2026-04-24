@@ -651,7 +651,7 @@ class MainWindow(QMainWindow):
             frame, frame_timestamp = self.camera.get_current_frame_with_timestamp()
             frame = self.apply_perspective_correction(frame)
             if frame is not None:
-                x, y, radius, robotX, robotY, robotRadius, axisright,axisleft = processFrame(frame, self)
+                x, y, radius, robotX, robotY, robotRadius, axisRightX, axisRightY, axisLeftX, axisLeftY = processFrame(frame, self)
 
                 # TODO: Robot detection is not that stable
                 # Check detected robot radius (if robot was not recognised correctly set invalid values)
@@ -1138,6 +1138,50 @@ class MainWindow(QMainWindow):
         self.robotRadiusLabel.setText(str(f"Radius: {robotRadius:.0f}"))
 
         return frame
+    
+    def updateAxisAngle(self, frame, axisRightX, axisRightY, axisLeftX, axisLeftY):
+        self.data.axisRightX = axisRightX
+        self.data.axisRightY = axisRightY
+        self.data.axisLeftX = axisLeftX
+        self.data.axisLeftY = axisLeftY
+
+        if axisRightX == -1 or axisRightY == -1 or axisLeftX == -1 or axisLeftY == -1:
+            cv2.putText(
+                frame,
+                "Axis markers not detected",
+                (20, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0, 0, 255),
+                2,
+            )
+            return frame
+
+        dx = axisRightX - axisLeftX
+        dy = axisRightY - axisLeftY
+
+        if dx == 0 and dy == 0:
+            return frame
+
+        angle_rad = math.atan2(dy, dx)
+        angle_deg = math.degrees(angle_rad)
+
+        self.data.rawAxisAngleDeg = angle_deg
+        self.data.axisAngleHistory.append(angle_deg)
+        self.data.filteredAxisAngleDeg = float(np.median(self.data.axisAngleHistory))
+
+        if abs(self.data.filteredAxisAngleDeg) < 0.5:
+            self.data.filteredAxisAngleDeg = 0.0
+
+        offset = int(self.data.filteredAxisAngleDeg * 5)
+        offset = max(-10, min(10, offset))
+        self.data.axisCorrectionOffset = offset
+
+        cv2.putText(frame, f"Axis angle raw: {self.data.rawAxisAngleDeg:.2f} deg", (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+        cv2.putText(frame, f"Axis angle filtered: {self.data.filteredAxisAngleDeg:.2f} deg", (20, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+        cv2.putText(frame, f"Axis offset: {self.data.axisCorrectionOffset}", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+
+        return frame
    
     def apply_perspective_correction(self,frame):
         try:
@@ -1213,7 +1257,15 @@ class MainWindow(QMainWindow):
 
             frame = self.apply_perspective_correction(frame)
             if frame is not None:
-                x, y, radius, robotX, robotY, robotRadius, axisRightY, axisLeftY = processFrame(frame, self)
+                x, y, radius, robotX, robotY, robotRadius, axisRightX, axisRightY, axisLeftX, axisLeftY = processFrame(frame, self)
+
+                frame = self.updateAxisAngle(
+                    frame,
+                    axisRightX,
+                    axisRightY,
+                    axisLeftX,
+                    axisLeftY,
+                )
 
                 data = {
                     "x": x,
@@ -1240,6 +1292,14 @@ class MainWindow(QMainWindow):
                         newRobotY,
                         self.data.syncRobotPosition
                     )
+
+                if self.data.botActivated:
+                    if self.data.axisCorrectionOffset != self.data.lastAxisCorrectionOffset:
+                        try:
+                                self.stepperController.set_offset(0, self.data.axisCorrectionOffset)
+                                self.data.lastAxisCorrectionOffset = self.data.axisCorrectionOffset
+                        except Exception as e:
+                                print(f"Axis offset error: {e}")
 
                 frame = self.controller.update(data)
                 if frame is None:
