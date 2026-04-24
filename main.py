@@ -1138,6 +1138,50 @@ class MainWindow(QMainWindow):
         self.robotRadiusLabel.setText(str(f"Radius: {robotRadius:.0f}"))
 
         return frame
+    
+    def updateAxisAngle(self, frame, axisRightX, axisRightY, axisLeftX, axisLeftY):
+        self.data.axisRightX = axisRightX
+        self.data.axisRightY = axisRightY
+        self.data.axisLeftX = axisLeftX
+        self.data.axisLeftY = axisLeftY
+
+        if axisRightX == -1 or axisRightY == -1 or axisLeftX == -1 or axisLeftY == -1:
+            cv2.putText(
+                frame,
+                "Axis markers not detected",
+                (20, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0, 0, 255),
+                2,
+            )
+            return frame
+
+        dx = axisRightX - axisLeftX
+        dy = axisRightY - axisLeftY
+
+        if dx == 0 and dy == 0:
+            return frame
+
+        angle_rad = math.atan2(dy, dx)
+        angle_deg = math.degrees(angle_rad)
+
+        self.data.rawAxisAngleDeg = angle_deg
+        self.data.axisAngleHistory.append(angle_deg)
+        self.data.filteredAxisAngleDeg = float(np.median(self.data.axisAngleHistory))
+
+        if abs(self.data.filteredAxisAngleDeg) < 0.5:
+            self.data.filteredAxisAngleDeg = 0.0
+
+        offset = int(self.data.filteredAxisAngleDeg * 5)
+        offset = max(-10, min(10, offset))
+        self.data.axisCorrectionOffset = offset
+
+        cv2.putText(frame, f"Axis angle raw: {self.data.rawAxisAngleDeg:.2f} deg", (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+        cv2.putText(frame, f"Axis angle filtered: {self.data.filteredAxisAngleDeg:.2f} deg", (20, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+        cv2.putText(frame, f"Axis offset: {self.data.axisCorrectionOffset}", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+
+        return frame
    
     def apply_perspective_correction(self,frame):
         try:
@@ -1213,9 +1257,17 @@ class MainWindow(QMainWindow):
 
             frame = self.apply_perspective_correction(frame)
             if frame is not None:
-                x, y, radius, robotX, robotY, robotRadius, axisRightY, axisLeftY = processFrame(frame, self)
+                                x, y, radius, robotX, robotY, robotRadius, axisRightX, axisRightY, axisLeftX, axisLeftY = processFrame(frame, self)
 
-                data = {
+            frame = self.updateAxisAngle(
+                    frame,
+                    axisRightX,
+                    axisRightY,
+                    axisLeftX,
+                    axisLeftY,
+                )
+
+            data = {
                     "x": x,
                     "y": y,
                     "radius": radius,
@@ -1225,7 +1277,7 @@ class MainWindow(QMainWindow):
                     "frame": frame
                 }
 
-                newRobotX, newRobotY = self.mapCoordinates(
+            newRobotX, newRobotY = self.mapCoordinates(
                     robotX,
                     robotY,
                     CAMERA_FRAME_HEIGHT,
@@ -1234,36 +1286,44 @@ class MainWindow(QMainWindow):
                     TABLE_MAX_Y,
                 )
 
-                if self.stepperController is not None:
+            if self.stepperController is not None:
                     self.stepperController.updateRobotPos(
                         newRobotX,
                         newRobotY,
                         self.data.syncRobotPosition
                     )
 
-                frame = self.controller.update(data)
-                if frame is None:
+                    if self.data.botActivated:
+                        if self.data.axisCorrectionOffset != self.data.lastAxisCorrectionOffset:
+                            try:
+                                self.stepperController.set_offset(0, self.data.axisCorrectionOffset)
+                                self.data.lastAxisCorrectionOffset = self.data.axisCorrectionOffset
+                            except Exception as e:
+                                print(f"Axis offset error: {e}")
+
+            frame = self.controller.update(data)
+            if frame is None:
                     return
                 
                 # Debug-Anzeige:
                 # Holt die Zielposition aus der Strategie und zeigt sie als pinken Kreis
-                if not hasattr(self.controller, "debugTargetCam") or self.controller.debugTargetCam is None:
+            if not hasattr(self.controller, "debugTargetCam") or self.controller.debugTargetCam is None:
                     debugX = int(CAMERA_FRAME_HEIGHT / 2)
                     debugY = int(DEFENSIVE_LINE)
-                else:
+            else:
                     debugX, debugY = self.controller.debugTargetCam
 
-                debugX = max(20, min(CAMERA_FRAME_HEIGHT - 20, debugX))
-                debugY = max(20, min(CAMERA_FRAME_WIDTH - 20, debugY))
+            debugX = max(20, min(CAMERA_FRAME_HEIGHT - 20, debugX))
+            debugY = max(20, min(CAMERA_FRAME_WIDTH - 20, debugY))
 
-                cv2.circle(frame, (debugX, debugY), 22, (255, 0, 255), 4)
+            cv2.circle(frame, (debugX, debugY), 22, (255, 0, 255), 4)
 
-                self.updatePostCalculationUi(frame)
-                self.updateFrameTime()
+            self.updatePostCalculationUi(frame)
+            self.updateFrameTime()
 
-                end_time = time.time()
-                zeit = end_time - start_time
-                # print(f"Benötigte Zeit: {zeit}")
+            end_time = time.time()
+            zeit = end_time - start_time
+            # print(f"Benötigte Zeit: {zeit}")
 
 
 
